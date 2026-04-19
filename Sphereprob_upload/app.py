@@ -809,11 +809,19 @@ st.markdown("""
         background-attachment: fixed;
     }
 
+    /* Hide Streamlit's default top toolbar so it doesn't cover the hero */
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+        height: 0 !important;
+    }
+    #MainMenu { visibility: hidden; }
+
     /* Refined content card */
     .block-container {
         background: rgba(20, 20, 36, 0.78);
         border-radius: 16px;
-        padding: 2.5rem 2.5rem 2.5rem 2.5rem !important;
+        padding: 3.5rem 2.5rem 2.5rem 2.5rem !important;
+        margin-top: 1.5rem !important;
         border: 1px solid rgba(255, 255, 255, 0.06);
         box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
         backdrop-filter: blur(8px);
