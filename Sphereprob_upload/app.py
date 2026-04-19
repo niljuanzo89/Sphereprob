@@ -1105,13 +1105,8 @@ def render_hero():
         '<div class="gj-metric-sub">unique songs so far</div></div>',
         '</div>',
     ]
-    # Use st.html() (Streamlit 1.33+) — renders raw HTML without markdown parsing.
-    # This avoids any 4-space / HTML-block-boundary edge cases in the markdown parser.
-    try:
-        st.html("".join(html_parts))
-    except AttributeError:
-        # Fallback for older Streamlit versions
-        st.markdown("".join(html_parts), unsafe_allow_html=True)
+    # Join with newlines; no line starts with leading spaces, so markdown won't treat as code.
+    st.markdown("\n".join(html_parts), unsafe_allow_html=True)
 
 
 # ── Share-link helpers ─────────────────────────────────────
