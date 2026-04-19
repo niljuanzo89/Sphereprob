@@ -144,14 +144,31 @@ def generate_setlist(city):
                 selected.remove(s)
                 removed.add(s)
 
+    # Bust-out limit: at most ONE song with gap > 500 per setlist.
+    # Keep the highest-scoring, remove the rest (they'll be replaced by the fill loop).
+    BUSTOUT_GAP = 500
+    bust_cands = [s for s in selected if current_gap.get(s, total_shows) > BUSTOUT_GAP]
+    bust_cands.sort(key=lambda s: scores[s], reverse=True)
+    if len(bust_cands) > 1:
+        for s in bust_cands[1:]:
+            selected.remove(s)
+            removed.add(s)
+    bust_kept = bust_cands[0] if bust_cands else None
+
     already = set(selected)
     for t in ["Staple", "Common", "Occasional", "Rare"]:
         for s in tier_buckets[t]:
             if len(selected) >= avg_length:
                 break
-            if s not in already and s not in removed and 0.15 <= song_pos(s) <= 0.85:
-                selected.append(s)
-                already.add(s)
+            if s in already or s in removed: continue
+            if not (0.15 <= song_pos(s) <= 0.85): continue
+            # Block additional bust-outs once one is kept
+            if current_gap.get(s, total_shows) > BUSTOUT_GAP and bust_kept is not None:
+                continue
+            selected.append(s)
+            already.add(s)
+            if current_gap.get(s, total_shows) > BUSTOUT_GAP:
+                bust_kept = s
 
     selected.sort(key=lambda s: song_pos(s))
 
@@ -171,6 +188,7 @@ def generate_setlist(city):
             "Shows Since Last Played": gap,
             "Adj Score": f"{adj:.1f}%",
             "Show Position": pos_label,
+            "Bust Out": gap > BUSTOUT_GAP,
             "_adj": adj,
             "_gap": gap,
             "_pos": pos,
@@ -330,14 +348,29 @@ def generate_sphere_setlist(target_date, sphere_songs_played):
                 selected.remove(s)
                 removed.add(s)
 
+    # Bust-out limit: at most ONE song with gap > 500 per setlist.
+    BUSTOUT_GAP = 500
+    bust_cands = [s for s in selected if current_gap.get(s, total_shows) > BUSTOUT_GAP]
+    bust_cands.sort(key=lambda s: scores[s], reverse=True)
+    if len(bust_cands) > 1:
+        for s in bust_cands[1:]:
+            selected.remove(s)
+            removed.add(s)
+    bust_kept = bust_cands[0] if bust_cands else None
+
     already_in_sel = set(selected)
     for t in ["Staple", "Common", "Occasional", "Rare"]:
         for s in tier_buckets[t]:
             if len(selected) >= avg_length:
                 break
-            if s not in already_in_sel and s not in removed and 0.15 <= song_pos(s) <= 0.85:
-                selected.append(s)
-                already_in_sel.add(s)
+            if s in already_in_sel or s in removed: continue
+            if not (0.15 <= song_pos(s) <= 0.85): continue
+            if current_gap.get(s, total_shows) > BUSTOUT_GAP and bust_kept is not None:
+                continue
+            selected.append(s)
+            already_in_sel.add(s)
+            if current_gap.get(s, total_shows) > BUSTOUT_GAP:
+                bust_kept = s
 
     selected.sort(key=lambda s: song_pos(s))
 
@@ -359,6 +392,7 @@ def generate_sphere_setlist(target_date, sphere_songs_played):
             "Adj Score": f"{adj:.1f}%",
             "Show Position": pos_label,
             "Recent": song in recent_songs,
+            "Bust Out": gap > 500,
             "_adj": adj,
             "_gap": gap,
             "_pos": pos,
@@ -492,7 +526,7 @@ def build_xlsx(rows, city, city_shows):
     for i, row in enumerate(rows):
         r = i + 5
         is_closer  = row["_pos"] > 0.85
-        is_bustout = row["_gap"] >= 150
+        is_bustout = row.get("Bust Out", False)
         is_alt     = i % 2 == 1
 
         if is_closer:   bg, fg = "2E1A1A", "F4C2C2"
@@ -747,7 +781,11 @@ def ask_trey_st(question, global_counter, global_shows):
     else:
         answer = f"Oh wow, {match} — now THAT would be something. We've played it {count} time{'s' if count!=1 else ''} since 2008. The Sphere feels like the right place to dust off something unexpected."
 
-    stats = {"pct": round(pct,1), "gap": gap, "adj": round(adj_pct,1), "sphere": [d[5:] for d in sphere_played]}
+    is_bust_out = gap > 500 and not sphere_played
+    if is_bust_out:
+        answer = f"⭐ **BUST OUT** — {answer}"
+    stats = {"pct": round(pct,1), "gap": gap, "adj": round(adj_pct,1),
+             "sphere": [d[5:] for d in sphere_played], "bust_out": is_bust_out}
     return match, answer, stats
 
 
@@ -757,7 +795,7 @@ st.set_page_config(page_title="Gotta-Jibbootistics", page_icon="🍩", layout="c
 
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Shrikhand&family=Kaushan+Script&family=JetBrains+Mono:wght@400;600&display=swap');
 
     /* Softer, brighter base with a more visible donut pattern */
     .stApp {
@@ -792,18 +830,21 @@ st.markdown("""
     }
     h1 {
         color: #FFF3B0 !important;
-        font-family: 'Outfit', sans-serif !important;
-        font-weight: 700 !important;
-        letter-spacing: -0.02em;
-        font-size: 2.4rem !important;
+        font-family: 'Shrikhand', 'Kaushan Script', cursive !important;
+        font-weight: 400 !important;
+        letter-spacing: 0.01em;
+        font-size: 2.8rem !important;
         margin-bottom: 0.3rem !important;
     }
     h2, h3, h4 {
         color: #FFE98A !important;
-        font-family: 'Outfit', sans-serif !important;
-        font-weight: 600 !important;
-        letter-spacing: -0.01em;
+        font-family: 'Shrikhand', 'Kaushan Script', cursive !important;
+        font-weight: 400 !important;
+        letter-spacing: 0.01em;
     }
+    h2 { font-size: 2rem !important; }
+    h3 { font-size: 1.5rem !important; }
+    h4 { font-size: 1.2rem !important; }
     code, pre { font-family: 'JetBrains Mono', monospace !important; }
     .stMarkdown small, .stCaption, div[data-testid="stCaptionContainer"] {
         color: #B8B8C8 !important;
@@ -844,8 +885,11 @@ st.markdown("""
     }
     .stTabs [data-baseweb="tab"] {
         color: #B8B8C8 !important;
-        font-weight: 500 !important;
+        font-weight: 400 !important;
         padding: 10px 16px !important;
+        font-family: 'Shrikhand', 'Kaushan Script', cursive !important;
+        font-size: 1rem !important;
+        letter-spacing: 0.02em;
     }
     .stTabs [aria-selected="true"] {
         color: #FFF3B0 !important;
@@ -883,8 +927,9 @@ st.markdown("""
     .gj-hero-text { flex: 1 1 auto; }
     .gj-hero h1 {
         margin: 0 0 2px 0 !important;
-        font-size: 2.2rem !important;
+        font-size: 2.6rem !important;
         line-height: 1.1;
+        font-family: 'Shrikhand', 'Kaushan Script', cursive !important;
     }
     .gj-hero-tag {
         color: #F4A88E;
@@ -935,11 +980,11 @@ st.markdown("""
     /* Section headings inside cards */
     .gj-section-head {
         color: #FFE98A;
-        font-family: 'Outfit', sans-serif;
-        font-weight: 600;
-        font-size: 1.05rem;
+        font-family: 'Shrikhand', 'Kaushan Script', cursive;
+        font-weight: 400;
+        font-size: 1.5rem;
         margin: 0 0 6px 0;
-        letter-spacing: -0.01em;
+        letter-spacing: 0.01em;
     }
     .gj-section-sub {
         color: #9a9ab0;
@@ -1105,8 +1150,13 @@ def render_hero():
         '<div class="gj-metric-sub">unique songs so far</div></div>',
         '</div>',
     ]
-    # Join with newlines; no line starts with leading spaces, so markdown won't treat as code.
-    st.markdown("\n".join(html_parts), unsafe_allow_html=True)
+    # Use st.html() (Streamlit 1.33+) — renders raw HTML without markdown parsing.
+    # This avoids any 4-space / HTML-block-boundary edge cases in the markdown parser.
+    try:
+        st.html("".join(html_parts))
+    except AttributeError:
+        # Fallback for older Streamlit versions
+        st.markdown("".join(html_parts), unsafe_allow_html=True)
 
 
 # ── Share-link helpers ─────────────────────────────────────
@@ -1208,18 +1258,19 @@ with tab1:
             rows_html = ""
             for row in rows:
                 is_closer  = row["_pos"] > 0.85
-                is_bustout = row["_gap"] >= 150
+                is_bustout = row.get("Bust Out", False)
                 if is_closer:    bg, fg = "#2E1A1A", "#F4C2C2"
                 elif is_bustout: bg, fg = "#1A2E1A", "#B9F6CA"
                 else:            bg, fg = "#1a1a2e" if row["#"] % 2 == 0 else "#16213e", "#EEEEEE"
 
                 tier_color = tier_colors.get(row["Tier"], "#FFFFFF")
                 adj_color = "#66BB6A" if row["_adj"] >= 30 else ("#42A5F5" if row["_adj"] >= 25 else fg)
+                song_label = f"{row['Song']} ⭐ <span style='color:#B9F6CA;font-size:11px'>BUST OUT</span>" if is_bustout else row['Song']
 
                 rows_html += f"""
                 <tr style="background:{bg};color:{fg}">
                     <td style="text-align:center;padding:6px">{row['#']}</td>
-                    <td style="padding:6px;font-weight:bold">{row['Song']}</td>
+                    <td style="padding:6px;font-weight:bold">{song_label}</td>
                     <td style="text-align:center;padding:6px;color:{tier_color}">{row['Tier']}</td>
                     <td style="text-align:center;padding:6px">{row['City Freq']}</td>
                     <td style="text-align:center;padding:6px">{row['Shows Since Last Played']}</td>
@@ -1238,7 +1289,7 @@ with tab1:
             st.markdown("""
             <div style="font-size:11px;color:#666;margin-top:8px">
             🟡 Staple &nbsp;|&nbsp; 🔵 Common &nbsp;|&nbsp; 🟢 Occasional &nbsp;|&nbsp; 🟣 Rare &nbsp;|&nbsp;
-            <span style="background:#1A2E1A;color:#B9F6CA;padding:1px 4px">Dark green = bustout (gap ≥ 150)</span> &nbsp;|&nbsp;
+            <span style="background:#1A2E1A;color:#B9F6CA;padding:1px 4px">Dark green ⭐ = Bust Out (gap > 500, max 1 per setlist)</span> &nbsp;|&nbsp;
             <span style="background:#2E1A1A;color:#F4C2C2;padding:1px 4px">Dark red = closer</span>
             </div>
             """, unsafe_allow_html=True)
@@ -1247,12 +1298,13 @@ with tab1:
 
             # Highlights
             top = max(rows, key=lambda r: r["_adj"])
-            bustouts = [r for r in rows if r["_gap"] >= 150]
+            bustouts = [r for r in rows if r.get("Bust Out")]
             closer = next((r for r in reversed(rows) if r["_pos"] > 0.85), rows[-1])
 
             st.markdown(f"**Top pick:** {top['Song']} ({top['Adj Score']} adj score) — the most probable song based on city history and gap.")
             if bustouts:
-                st.markdown(f"**Bustout watch:** {', '.join(r['Song'] for r in bustouts)} — each overdue by {', '.join(str(r['_gap']) for r in bustouts)} shows respectively.")
+                b = bustouts[0]
+                st.markdown(f"**⭐ Bust Out:** {b['Song']} — overdue by {b['_gap']} shows.")
             st.markdown(f"**Expected closer:** {closer['Song']}")
 
             # Share link
@@ -1591,7 +1643,7 @@ with tab3:
             body_html = ""
             for row in rows:
                 is_closer  = row["_pos"] > 0.85
-                is_bustout = row["_gap"] >= 150
+                is_bustout = row.get("Bust Out", False)
                 is_recent  = row["Recent"]
 
                 if is_recent:    bg, fg = "#3a1f00", "#FFCC80"
@@ -1602,11 +1654,12 @@ with tab3:
                 tier_color = tier_colors_p.get(row["Tier"], "#FFFFFF")
                 adj_color = "#66BB6A" if row["_adj"] >= 30 else ("#42A5F5" if row["_adj"] >= 25 else fg)
                 recent_mark = "🔥" if is_recent else ""
+                song_label = f"{row['Song']} ⭐ <span style='color:#B9F6CA;font-size:11px'>BUST OUT</span>" if is_bustout else row['Song']
 
                 body_html += f"""
                 <tr style="background:{bg};color:{fg}">
                     <td style="text-align:center;padding:6px">{row['#']}</td>
-                    <td style="padding:6px;font-weight:bold">{row['Song']}</td>
+                    <td style="padding:6px;font-weight:bold">{song_label}</td>
                     <td style="text-align:center;padding:6px;color:{tier_color}">{row['Tier']}</td>
                     <td style="text-align:center;padding:6px">{row['Vegas/Global Freq']}</td>
                     <td style="text-align:center;padding:6px">{row['Global Freq']}</td>
@@ -1628,7 +1681,7 @@ with tab3:
             <div style="font-size:11px;color:#666;margin-top:8px">
             🔥 = played in the last 10–15 shows (rotation boost applied) &nbsp;|&nbsp;
             <span style="background:#3a1f00;color:#FFCC80;padding:1px 4px">Orange row = recent rotation</span> &nbsp;|&nbsp;
-            <span style="background:#1A2E1A;color:#B9F6CA;padding:1px 4px">Green = bustout (gap ≥ 150)</span> &nbsp;|&nbsp;
+            <span style="background:#1A2E1A;color:#B9F6CA;padding:1px 4px">Green ⭐ = Bust Out (gap > 500, max 1 per setlist)</span> &nbsp;|&nbsp;
             <span style="background:#2E1A1A;color:#F4C2C2;padding:1px 4px">Red = closer</span>
             </div>
             """, unsafe_allow_html=True)
@@ -1636,7 +1689,7 @@ with tab3:
             # Highlights
             st.divider()
             top_p = max(rows, key=lambda r: r["_adj"])
-            bustouts_p = [r for r in rows if r["_gap"] >= 150]
+            bustouts_p = [r for r in rows if r.get("Bust Out")]
             closer_p = next((r for r in reversed(rows) if r["_pos"] > 0.85), rows[-1] if rows else None)
             recent_hits = [r for r in rows if r["Recent"]]
 
@@ -1645,7 +1698,8 @@ with tab3:
                 st.markdown(f"**🔥 Current rotation hits:** {', '.join(r['Song'] for r in recent_hits[:6])}"
                             f"{'...' if len(recent_hits)>6 else ''}")
             if bustouts_p:
-                st.markdown(f"**💎 Bustout watch:** {', '.join(r['Song'] for r in bustouts_p)}")
+                b = bustouts_p[0]
+                st.markdown(f"**⭐ Bust Out:** {b['Song']} — overdue by {b['_gap']} shows.")
             if closer_p:
                 st.markdown(f"**🎬 Expected closer:** {closer_p['Song']}")
 
