@@ -752,7 +752,7 @@ def ask_trey_st(question, global_counter, global_shows):
 
 # ── UI ──────────────────────────────────────────────────────────────────────
 
-st.set_page_config(page_title="Gotta-Jibbootistics", page_icon="🎸", layout="centered")
+st.set_page_config(page_title="Gotta-Jibbootistics", page_icon="🍩", layout="centered")
 
 st.markdown("""
     <style>
@@ -955,6 +955,55 @@ st.markdown("""
         font-size: 12px;
         text-align: center;
     }
+
+    /* ── Animations ──────────────────────────── */
+    @property --count {
+        syntax: '<integer>';
+        initial-value: 0;
+        inherits: false;
+    }
+
+    /* Staggered fade-slide for metrics */
+    .gj-metric {
+        opacity: 0;
+        transform: translateY(8px);
+        animation: gj-enter 0.55s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+    }
+    .gj-metric:nth-child(1) { animation-delay: 0.05s; }
+    .gj-metric:nth-child(2) { animation-delay: 0.15s; }
+    .gj-metric:nth-child(3) { animation-delay: 0.25s; }
+    .gj-metric:nth-child(4) { animation-delay: 0.35s; }
+    @keyframes gj-enter {
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Hero logo gentle spin-in */
+    .gj-hero-logo svg {
+        animation: gj-logo-in 0.8s cubic-bezier(0.2, 0.7, 0.3, 1);
+    }
+    @keyframes gj-logo-in {
+        from { opacity: 0; transform: rotate(-25deg) scale(0.7); }
+        to   { opacity: 1; transform: rotate(0) scale(1); }
+    }
+
+    /* Share link popup */
+    .gj-share {
+        background: rgba(40, 40, 70, 0.85);
+        border: 1px solid rgba(255, 209, 102, 0.3);
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+        color: #FFF3B0;
+        word-break: break-all;
+        margin: 10px 0;
+    }
+
+    /* Reduced motion respect */
+    @media (prefers-reduced-motion: reduce) {
+        .gj-metric, .gj-hero-logo svg { animation: none !important; opacity: 1 !important; transform: none !important; }
+        .gj-count::before { animation: none !important; }
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -1008,10 +1057,30 @@ def get_hero_stats():
     }
 
 
+def _counter_css(idx, target):
+    """Build a CSS snippet that animates an integer counter to `target` for metric #idx."""
+    return (
+        f"@property --c{idx} {{ syntax: '<integer>'; initial-value: 0; inherits: false; }}\n"
+        f".gj-count-{idx} {{ animation: gj-count-{idx} 1.6s cubic-bezier(0.2,0.7,0.3,1) 0.15s forwards; "
+        f"counter-reset: num var(--c{idx}); }}\n"
+        f".gj-count-{idx}::before {{ content: counter(num); }}\n"
+        f"@keyframes gj-count-{idx} {{ to {{ --c{idx}: {int(target)}; }} }}\n"
+    )
+
+
 def render_hero():
-    """Render SVG logo + wordmark + tagline + metrics row."""
+    """Render SVG logo + wordmark + tagline + metrics row with animated counters."""
     stats = get_hero_stats()
+
+    counter_css = (
+        _counter_css(1, stats["shows"])
+        + _counter_css(2, stats["songs"])
+        + _counter_css(3, stats["sphere_done"])
+        + _counter_css(4, stats["unique_sphere_songs"])
+    )
+
     st.markdown(f"""
+    <style>{counter_css}</style>
     <div class="gj-hero">
       <div class="gj-hero-logo">{DONUT_LOGO_SVG}</div>
       <div class="gj-hero-text">
@@ -1022,26 +1091,51 @@ def render_hero():
     <div class="gj-metrics">
       <div class="gj-metric">
         <div class="gj-metric-label">Shows Analyzed</div>
-        <div class="gj-metric-value">{stats['shows']:,}</div>
+        <div class="gj-metric-value"><span class="gj-count-1"></span></div>
         <div class="gj-metric-sub">2008 – present</div>
       </div>
       <div class="gj-metric">
         <div class="gj-metric-label">Unique Songs</div>
-        <div class="gj-metric-value">{stats['songs']:,}</div>
+        <div class="gj-metric-value"><span class="gj-count-2"></span></div>
         <div class="gj-metric-sub">in the catalog</div>
       </div>
       <div class="gj-metric">
         <div class="gj-metric-label">Sphere 2026</div>
-        <div class="gj-metric-value">{stats['sphere_done']} <span style="color:#8888a0;font-weight:400;font-size:1rem">/ {stats['sphere_done']+stats['sphere_left']}</span></div>
+        <div class="gj-metric-value"><span class="gj-count-3"></span> <span style="color:#8888a0;font-weight:400;font-size:1rem">/ {stats['sphere_done']+stats['sphere_left']}</span></div>
         <div class="gj-metric-sub">{stats['sphere_left']} show{'s' if stats['sphere_left']!=1 else ''} remaining</div>
       </div>
       <div class="gj-metric">
         <div class="gj-metric-label">Sphere Setlist</div>
-        <div class="gj-metric-value">{stats['unique_sphere_songs']}</div>
+        <div class="gj-metric-value"><span class="gj-count-4"></span></div>
         <div class="gj-metric-sub">unique songs so far</div>
       </div>
     </div>
     """, unsafe_allow_html=True)
+
+
+# ── Share-link helpers ─────────────────────────────────────
+def _build_share_url(params: dict) -> str:
+    """Build a shareable URL with current query params."""
+    base = "https://sphereprob.streamlit.app"
+    qs = urllib.parse.urlencode({k: v for k, v in params.items() if v})
+    return f"{base}/?{qs}" if qs else base
+
+
+def render_share_box(params: dict, key: str):
+    """Inline share-link display — shows a monospace URL on click."""
+    col_a, col_b = st.columns([1, 3])
+    with col_a:
+        show = st.button("🔗 Share this prediction", key=f"share_{key}")
+    if show:
+        st.session_state[f"share_open_{key}"] = True
+    if st.session_state.get(f"share_open_{key}"):
+        url = _build_share_url(params)
+        st.markdown(
+            f'<div class="gj-share">{url}</div>'
+            f'<div style="font-size:11px;color:#8888a0;margin-top:-4px">'
+            f'Copy this URL — anyone with the link will see the same prediction.</div>',
+            unsafe_allow_html=True,
+        )
 
 
 def render_methodology_footer():
@@ -1081,7 +1175,14 @@ tab1, tab2, tab3 = st.tabs(["🎸 City Predictor", "🏟️ Top 50 · Sphere 202
 with tab1:
     st.divider()
 
-    city = st.text_input("Enter a city:", placeholder="e.g. Albany, Chicago, Noblesville")
+    # Pre-fill from ?city=... query param
+    _url_city = st.query_params.get("city", "")
+    city = st.text_input(
+        "Enter a city:",
+        value=_url_city,
+        placeholder="e.g. Albany, Chicago, Noblesville",
+        key="city_input",
+    )
 
     if city:
         with st.spinner(f"Generating setlist for {city}..."):
@@ -1157,6 +1258,9 @@ with tab1:
             if bustouts:
                 st.markdown(f"**Bustout watch:** {', '.join(r['Song'] for r in bustouts)} — each overdue by {', '.join(str(r['_gap']) for r in bustouts)} shows respectively.")
             st.markdown(f"**Expected closer:** {closer['Song']}")
+
+            # Share link
+            render_share_box({"city": city}, key="city")
 
             st.divider()
 
@@ -1443,9 +1547,14 @@ with tab3:
     if not upcoming:
         st.info("No remaining Sphere shows on the schedule. Check back after the next tour is announced!")
     else:
+        # Pre-select from ?sphere_date=... query param if valid
+        _url_sd = st.query_params.get("sphere_date", "")
+        _default_idx = upcoming.index(_url_sd) if _url_sd in upcoming else 0
+
         target_date = st.selectbox(
             "Select an upcoming Sphere show:",
             upcoming,
+            index=_default_idx,
             format_func=lambda d: datetime.date.fromisoformat(d).strftime("%A, %B %d, %Y")
         )
 
@@ -1543,6 +1652,9 @@ with tab3:
                 st.markdown(f"**💎 Bustout watch:** {', '.join(r['Song'] for r in bustouts_p)}")
             if closer_p:
                 st.markdown(f"**🎬 Expected closer:** {closer_p['Song']}")
+
+            # Share link
+            render_share_box({"sphere_date": target_date}, key="sphere")
 
             # Excluded list (already played at Sphere)
             if result["excluded"]:
