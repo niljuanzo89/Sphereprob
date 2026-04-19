@@ -1312,7 +1312,7 @@ tab1, tab2, tab3 = st.tabs(["🎸 City Predictor", "🏟️ Top 50 · Sphere 202
 # The JS reaches into the parent document to attach tab-click listeners
 # and spawn glowsticks that arc from top to bottom.
 import streamlit.components.v1 as _components
-_components.html("""
+_components.html(r"""
 <script>
 (function() {
     const doc = window.parent.document;
