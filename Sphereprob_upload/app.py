@@ -260,7 +260,7 @@ def generate_sphere_setlist(target_date, sphere_songs_played):
         matched_locations = ["Global"]
         source = f"Global ({global_shows} shows)"
 
-    # Find songs played in the 10-15 shows prior to target_date — "recent rotation" boost.
+    # Find songs played in the 10-15 shows prior to target_date ‚Äî "recent rotation" boost.
     # (Looks at the 10th through 15th most recent shows before target_date, chronologically.)
     all_shows = []
     with open(FILEPATH, newline="") as f:
@@ -403,13 +403,13 @@ def build_bingo_pdf(cards, city):
     HEADER_FG = colors.HexColor("#F0E68C")
 
     story = []
-    story.append(Paragraph("🎸 Gotta-Jibbootistics", ParagraphStyle(
+    story.append(Paragraph("üé∏ Gotta-Jibbootistics", ParagraphStyle(
         "t", fontSize=20, textColor=HEADER_FG, alignment=TA_CENTER,
         fontName="Helvetica-Bold", spaceAfter=2)))
     story.append(Paragraph("whatever you do, take care of your shoes", ParagraphStyle(
         "s", fontSize=9, textColor=colors.HexColor("#e85545"), alignment=TA_CENTER,
         fontName="Helvetica-Oblique", spaceAfter=4)))
-    story.append(Paragraph(f"Bingo Card — {city.title()}", ParagraphStyle(
+    story.append(Paragraph(f"Bingo Card ‚Äî {city.title()}", ParagraphStyle(
         "c", fontSize=11, textColor=colors.HexColor("#aaaacc"), alignment=TA_CENTER,
         fontName="Helvetica", spaceAfter=10)))
 
@@ -444,7 +444,7 @@ def build_bingo_pdf(cards, city):
     story.append(tbl)
     story.append(Spacer(1, 0.1*inch))
     story.append(Paragraph(
-        "🟡 From predicted setlist  |  🔵 Globally common  |  🟣 Rare / uncommon",
+        "üü° From predicted setlist  |  üîµ Globally common  |  üü£ Rare / uncommon",
         ParagraphStyle("leg", fontSize=7.5, textColor=colors.HexColor("#888888"),
                        alignment=TA_CENTER, fontName="Helvetica")))
     doc.build(story)
@@ -462,7 +462,7 @@ def build_xlsx(rows, city, city_shows):
 
     ws.merge_cells("A1:G1")
     c = ws["A1"]
-    c.value = f"PHISH  —  {city.upper()}"
+    c.value = f"PHISH  ‚Äî  {city.upper()}"
     c.font = Font(name="Arial", bold=True, size=18, color="F0E68C")
     c.fill = PatternFill("solid", fgColor="1A1A2E")
     c.alignment = Alignment(horizontal="center", vertical="center")
@@ -470,7 +470,7 @@ def build_xlsx(rows, city, city_shows):
 
     ws.merge_cells("A2:G2")
     c = ws["A2"]
-    c.value = f"Predicted Setlist  |  Based on {city_shows} shows  |  Gap-adjusted · Position-ordered"
+    c.value = f"Predicted Setlist  |  Based on {city_shows} shows  |  Gap-adjusted ¬∑ Position-ordered"
     c.font = Font(name="Arial", italic=True, size=10, color="AAAACC")
     c.fill = PatternFill("solid", fgColor="1A1A2E")
     c.alignment = Alignment(horizontal="center", vertical="center")
@@ -517,7 +517,7 @@ def build_xlsx(rows, city, city_shows):
     lr = len(rows) + 6
     ws.merge_cells(f"A{lr}:G{lr}")
     c = ws.cell(row=lr, column=1,
-        value="Green adj score ≥ 30%  |  Blue adj score ≥ 25%  |  Dark green = bustout (gap ≥ 150 shows)  |  Dark red = closer")
+        value="Green adj score ‚â• 30%  |  Blue adj score ‚â• 25%  |  Dark green = bustout (gap ‚â• 150 shows)  |  Dark red = closer")
     c.font = Font(name="Arial", size=8, italic=True, color="888888")
     c.alignment = Alignment(horizontal="left", vertical="center")
     ws.row_dimensions[lr].height = 20
@@ -528,7 +528,7 @@ def build_xlsx(rows, city, city_shows):
     return buf
 
 
-# ── Top 50 / Sphere helpers ─────────────────────────────────────────────────
+# ‚îÄ‚îÄ Top 50 / Sphere helpers ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ
 
 API_KEY = "C5A172D7DD1198D7BB1C"
 
@@ -602,7 +602,7 @@ def _build_top50_xlsx_buf(top50, global_shows, sphere_songs):
 
     ws.merge_cells("A1:F1")
     c = ws["A1"]
-    c.value     = "PHISH  —  Top 50 Most Played Songs (2008–Present)"
+    c.value     = "PHISH  ‚Äî  Top 50 Most Played Songs (2008‚ÄìPresent)"
     c.font      = Font(name="Arial", bold=True, size=16, color="F0E68C")
     c.fill      = PatternFill("solid", fgColor="1A1A2E")
     c.alignment = Alignment(horizontal="center", vertical="center")
@@ -611,7 +611,7 @@ def _build_top50_xlsx_buf(top50, global_shows, sphere_songs):
     ws.merge_cells("A2:F2")
     c = ws["A2"]
     c.value     = (f"Based on {global_shows} shows  |  % = chance on any given night  |  "
-                   f"★ = played at Sphere  |  Updated: {generated}")
+                   f"‚òÖ = played at Sphere  |  Updated: {generated}")
     c.font      = Font(name="Arial", italic=True, size=9, color="AAAACC")
     c.fill      = PatternFill("solid", fgColor="1A1A2E")
     c.alignment = Alignment(horizontal="center", vertical="center")
@@ -642,7 +642,7 @@ def _build_top50_xlsx_buf(top50, global_shows, sphere_songs):
         key = "green" if rank <= 10 else ("orange" if rank <= 25 else "purple")
         bg, fg = TIER_FILL_X[key]
         dates_played = sphere_songs.get(song, [])
-        sphere_label = ("★  " + ",  ".join(d[5:] for d in sorted(dates_played))
+        sphere_label = ("‚òÖ  " + ",  ".join(d[5:] for d in sorted(dates_played))
                         if dates_played else "")
         yt_query = urllib.parse.quote_plus(f"Phish {song} Sphere Las Vegas 2026")
         yt_url   = f"https://www.youtube.com/results?search_query={yt_query}"
@@ -662,7 +662,7 @@ def _build_top50_xlsx_buf(top50, global_shows, sphere_songs):
 
         yt_cell = ws.cell(row=r, column=6)
         if dates_played:
-            yt_cell.value     = "▶ Watch"
+            yt_cell.value     = "‚ñ∂ Watch"
             yt_cell.hyperlink = yt_url
             yt_cell.fill      = PatternFill("solid", fgColor=SPHERE_BG_X)
             yt_cell.font      = Font(name="Arial", size=10, color="4FC3F7", bold=True, underline="single")
@@ -676,7 +676,7 @@ def _build_top50_xlsx_buf(top50, global_shows, sphere_songs):
     lr = 57
     ws.merge_cells(f"A{lr}:F{lr}")
     c = ws.cell(row=lr, column=1,
-                value="Green = Top 10  |  Orange = Ranks 11–25  |  Purple = Ranks 26–50  |  Gold = played at Sphere 2026")
+                value="Green = Top 10  |  Orange = Ranks 11‚Äì25  |  Purple = Ranks 26‚Äì50  |  Gold = played at Sphere 2026")
     c.font      = Font(name="Arial", size=8, italic=True, color="888888")
     c.alignment = Alignment(horizontal="left", vertical="center")
 
@@ -705,7 +705,7 @@ def ask_trey_st(question, global_counter, global_shows):
                     match = close[0]; break
             if match: break
     if not match:
-        return None, "I didn't catch a song name — try something like 'Will you play Sand?' and I'll give you the real numbers.", {}
+        return None, "I didn't catch a song name ‚Äî try something like 'Will you play Sand?' and I'll give you the real numbers.", {}
 
     count = global_counter[match]
     pct   = count / global_shows * 100
@@ -720,36 +720,39 @@ def ask_trey_st(question, global_counter, global_shows):
         for row in csv.DictReader(f):
             if not row["date"][:4].isdigit() or int(row["date"][:4]) < START_YEAR:
                 continue
-            for s in row["setlist"].split("|"):
-                s = s.strip()
-                if s: song_last_idx[s] = show_idx
+            songs_row = [s.strip() for s in row["setlist"].split("|") if s.strip()]
+            if not songs_row:
+                continue  # skip rows with no setlist (future/scheduled shows)
+            for s in songs_row:
+                song_last_idx[s] = show_idx
             show_idx += 1
-    gap = global_shows - song_last_idx.get(match, 0) - 1
-    adj_pct = min(pct * (1 + math.log(gap+1)/math.log(global_shows+1)), 99.9)
+    gap = max(0, global_shows - song_last_idx.get(match, 0) - 1)
+    log_denom = math.log(global_shows + 1) if global_shows > 0 else 1
+    adj_pct = min(pct * (1 + math.log(gap + 1) / log_denom), 99.9)
 
     if sphere_played:
         if len(sphere_played) > 1:
-            answer = f"Ha — {match}! We've already played that {len(sphere_played)} times this run ({', '.join(d[5:] for d in sphere_played)}). Historically it shows up in {pct:.1f}% of our shows."
+            answer = f"Ha ‚Äî {match}! We've already played that {len(sphere_played)} times this run ({', '.join(d[5:] for d in sphere_played)}). Historically it shows up in {pct:.1f}% of our shows."
         else:
-            answer = f"{match} — yeah, we played that on {sphere_played[0][5:]}. It's in our setlist about {pct:.1f}% of the time overall. Could we revisit it? Maybe — but we don't like to repeat too much in a single run."
+            answer = f"{match} ‚Äî yeah, we played that on {sphere_played[0][5:]}. It's in our setlist about {pct:.1f}% of the time overall. Could we revisit it? Maybe ‚Äî but we don't like to repeat too much in a single run."
     elif gap > 200:
-        answer = f"{match} — oh man. That one's been sitting in the vault for {gap} shows. Historically {pct:.1f}% of nights, but gap-adjusted it's up around {adj_pct:.1f}%. We've got {shows_left} nights left at the Sphere... keep your ears open."
+        answer = f"{match} ‚Äî oh man. That one's been sitting in the vault for {gap} shows. Historically {pct:.1f}% of nights, but gap-adjusted it's up around {adj_pct:.1f}%. We've got {shows_left} nights left at the Sphere... keep your ears open."
     elif pct >= 15:
-        answer = f"{match} is basically a staple — we play it {pct:.1f}% of shows. It hasn't shown up yet this Sphere run and we've got {shows_left} nights left. I'd feel confident betting on this one."
+        answer = f"{match} is basically a staple ‚Äî we play it {pct:.1f}% of shows. It hasn't shown up yet this Sphere run and we've got {shows_left} nights left. I'd feel confident betting on this one."
     elif pct >= 5:
-        answer = f"Good question. {match} shows up in about {pct:.1f}% of our shows — a song we genuinely love. Last played {gap} shows ago. Adjusted probability: {adj_pct:.1f}%. There's a real shot."
+        answer = f"Good question. {match} shows up in about {pct:.1f}% of our shows ‚Äî a song we genuinely love. Last played {gap} shows ago. Adjusted probability: {adj_pct:.1f}%. There's a real shot."
     elif pct >= 1:
-        answer = f"{match} — that's a deep cut. About {pct:.1f}% of shows, {gap} shows since we last played it. These Sphere shows feel special though. Adjusted probability: {adj_pct:.1f}%. Stranger things have happened."
+        answer = f"{match} ‚Äî that's a deep cut. About {pct:.1f}% of shows, {gap} shows since we last played it. These Sphere shows feel special though. Adjusted probability: {adj_pct:.1f}%. Stranger things have happened."
     else:
-        answer = f"Oh wow, {match} — now THAT would be something. We've played it {count} time{'s' if count!=1 else ''} since 2008. The Sphere feels like the right place to dust off something unexpected."
+        answer = f"Oh wow, {match} ‚Äî now THAT would be something. We've played it {count} time{'s' if count!=1 else ''} since 2008. The Sphere feels like the right place to dust off something unexpected."
 
     stats = {"pct": round(pct,1), "gap": gap, "adj": round(adj_pct,1), "sphere": [d[5:] for d in sphere_played]}
     return match, answer, stats
 
 
-# ── UI ──────────────────────────────────────────────────────────────────────
+# ‚îÄ‚îÄ UI ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ
 
-st.set_page_config(page_title="Gotta-Jibbootistics", page_icon="🎸", layout="centered")
+st.set_page_config(page_title="Gotta-Jibbootistics", page_icon="üé∏", layout="centered")
 
 st.markdown("""
     <style>
@@ -772,15 +775,15 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🎸 Gotta-Jibbootistics")
+st.title("üé∏ Gotta-Jibbootistics")
 st.markdown('<p style="color:#e85545;font-style:italic;font-size:13px;margin-top:-12px">whatever you do, take care of your shoes</p>', unsafe_allow_html=True)
-st.markdown("*Predict the most probable setlist for any city based on historical data (2008–present), gap analysis, and song position.*")
+st.markdown("*Predict the most probable setlist for any city based on historical data (2008‚Äìpresent), gap analysis, and song position.*")
 
-tab1, tab2, tab3 = st.tabs(["🎸 Setlist Predictor", "🏆 Top 50 · Sphere 2026", "🔮 Sphere Predictor"])
+tab1, tab2, tab3 = st.tabs(["üé∏ Setlist Predictor", "üèÜ Top 50 ¬∑ Sphere 2026", "üîÆ Sphere Predictor"])
 
-# ═══════════════════════════════════════════════════════════
-# TAB 1 — Setlist Predictor
-# ═══════════════════════════════════════════════════════════
+# ‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê
+# TAB 1 ‚Äî Setlist Predictor
+# ‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê
 with tab1:
     st.divider()
 
@@ -793,7 +796,7 @@ with tab1:
         if rows is None:
             st.error(f"No shows found for '{city}'. Try a different city name.")
         else:
-            st.success(f"Found **{city_shows} shows** in {', '.join(locations)} — setlist has **{len(rows)} songs**")
+            st.success(f"Found **{city_shows} shows** in {', '.join(locations)} ‚Äî setlist has **{len(rows)} songs**")
 
             # Color-code the table
             tier_colors = {
@@ -843,8 +846,8 @@ with tab1:
 
             st.markdown("""
             <div style="font-size:11px;color:#666;margin-top:8px">
-            🟡 Staple &nbsp;|&nbsp; 🔵 Common &nbsp;|&nbsp; 🟢 Occasional &nbsp;|&nbsp; 🟣 Rare &nbsp;|&nbsp;
-            <span style="background:#1A2E1A;color:#B9F6CA;padding:1px 4px">Dark green = bustout (gap ≥ 150)</span> &nbsp;|&nbsp;
+            üü° Staple &nbsp;|&nbsp; üîµ Common &nbsp;|&nbsp; üü¢ Occasional &nbsp;|&nbsp; üü£ Rare &nbsp;|&nbsp;
+            <span style="background:#1A2E1A;color:#B9F6CA;padding:1px 4px">Dark green = bustout (gap ‚â• 150)</span> &nbsp;|&nbsp;
             <span style="background:#2E1A1A;color:#F4C2C2;padding:1px 4px">Dark red = closer</span>
             </div>
             """, unsafe_allow_html=True)
@@ -856,9 +859,9 @@ with tab1:
             bustouts = [r for r in rows if r["_gap"] >= 150]
             closer = next((r for r in reversed(rows) if r["_pos"] > 0.85), rows[-1])
 
-            st.markdown(f"**Top pick:** {top['Song']} ({top['Adj Score']} adj score) — the most probable song based on city history and gap.")
+            st.markdown(f"**Top pick:** {top['Song']} ({top['Adj Score']} adj score) ‚Äî the most probable song based on city history and gap.")
             if bustouts:
-                st.markdown(f"**Bustout watch:** {', '.join(r['Song'] for r in bustouts)} — each overdue by {', '.join(str(r['_gap']) for r in bustouts)} shows respectively.")
+                st.markdown(f"**Bustout watch:** {', '.join(r['Song'] for r in bustouts)} ‚Äî each overdue by {', '.join(str(r['_gap']) for r in bustouts)} shows respectively.")
             st.markdown(f"**Expected closer:** {closer['Song']}")
 
             st.divider()
@@ -866,7 +869,7 @@ with tab1:
             # Download button
             xlsx_buf = build_xlsx(rows, city, city_shows)
             st.download_button(
-                label="⬇️ Download Spreadsheet (.xlsx)",
+                label="‚¨áÔ∏è Download Spreadsheet (.xlsx)",
                 data=xlsx_buf,
                 file_name=f"{city.replace(' ', '_')}_Setlist.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -875,8 +878,8 @@ with tab1:
             st.divider()
 
             # Bingo card
-            st.subheader("🎲 Bingo Card")
-            st.caption("🟡 From predicted setlist · 🔵 Globally common · 🟣 Rare / uncommon")
+            st.subheader("üé≤ Bingo Card")
+            st.caption("üü° From predicted setlist ¬∑ üîµ Globally common ¬∑ üü£ Rare / uncommon")
             if st.button("Generate Bingo Card"):
                 cards = generate_bingo(city)
                 if cards:
@@ -886,9 +889,9 @@ with tab1:
             if "bingo_cards" in st.session_state and st.session_state.get("bingo_city") == city:
                 cards = st.session_state["bingo_cards"]
                 cat_styles = {
-                    "setlist": ("background:#2a2a10;color:#F0E68C;border:1px solid #555522", "🟡"),
-                    "common":  ("background:#0d2235;color:#7ec8e3;border:1px solid #1a4a66", "🔵"),
-                    "rare":    ("background:#2a0d35;color:#ce93d8;border:1px solid #5a2a6a", "🟣"),
+                    "setlist": ("background:#2a2a10;color:#F0E68C;border:1px solid #555522", "üü°"),
+                    "common":  ("background:#0d2235;color:#7ec8e3;border:1px solid #1a4a66", "üîµ"),
+                    "rare":    ("background:#2a0d35;color:#ce93d8;border:1px solid #5a2a6a", "üü£"),
                 }
                 cell_style = "padding:8px 4px;text-align:center;font-size:12px;font-weight:bold;border-radius:6px;min-height:60px;display:flex;align-items:center;justify-content:center;word-break:break-word;"
 
@@ -910,19 +913,19 @@ with tab1:
                 st.markdown("")
                 pdf_buf = build_bingo_pdf(cards, city)
                 st.download_button(
-                    label="🖨️ Download Printable PDF",
+                    label="üñ®Ô∏è Download Printable PDF",
                     data=pdf_buf,
                     file_name=f"{city.replace(' ', '_')}_Bingo.pdf",
                     mime="application/pdf",
                 )
 
 
-# ═══════════════════════════════════════════════════════════
-# TAB 2 — Top 50 · Sphere 2026 Tracker
-# ═══════════════════════════════════════════════════════════
+# ‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê
+# TAB 2 ‚Äî Top 50 ¬∑ Sphere 2026 Tracker
+# ‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê
 with tab2:
-    st.markdown("### 🏟️ Phish at the Sphere — Las Vegas 2026")
-    st.caption("Top 50 most-played songs since 2008 · Live Sphere setlist data from phish.net · Updates hourly")
+    st.markdown("### üèüÔ∏è Phish at the Sphere ‚Äî Las Vegas 2026")
+    st.caption("Top 50 most-played songs since 2008 ¬∑ Live Sphere setlist data from phish.net ¬∑ Updates hourly")
 
     with st.spinner("Loading Top 50 data & Sphere setlists..."):
         global_counter_t50, global_shows_t50 = build_top50_st()
@@ -933,7 +936,7 @@ with tab2:
     shows_done = len([d for d in sphere_dates_t50 if d <= today_str])
     shows_left = len(sphere_dates_t50) - shows_done
 
-    # ── Possum insight bubble ──────────────────────────────
+    # ‚îÄ‚îÄ Possum insight bubble ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ
     sphere_played_songs = [s for s in global_counter_t50 if sphere_songs_t50.get(s)]
     top10_names = [s for s, _ in top50[:10]]
     top10_at_sphere = [s for s in top10_names if sphere_songs_t50.get(s)]
@@ -944,7 +947,7 @@ with tab2:
         insights.append(f"Of the Top 10 all-time songs, **{len(top10_at_sphere)}** have already been played at the Sphere: {', '.join(top10_at_sphere)}.")
     if most_played_sphere:
         song_mp, dates_mp = most_played_sphere[0]
-        insights.append(f"**{song_mp}** has been played the most times this Sphere run — {len(dates_mp)} night{'s' if len(dates_mp)>1 else ''}.")
+        insights.append(f"**{song_mp}** has been played the most times this Sphere run ‚Äî {len(dates_mp)} night{'s' if len(dates_mp)>1 else ''}.")
     unplayed_top10 = [s for s in top10_names if not sphere_songs_t50.get(s)]
     if unplayed_top10:
         insights.append(f"Still waiting on these Top-10 staples to appear at the Sphere: **{', '.join(unplayed_top10[:3])}**{'...' if len(unplayed_top10)>3 else ''}.")
@@ -954,13 +957,13 @@ with tab2:
         insights.append("The Sphere run is complete! What a historic stretch of shows.")
     sphere_only = [s for s, _ in top50 if s not in [x for x,_ in top50[:10]] and sphere_songs_t50.get(s)]
     if sphere_only:
-        insights.append(f"Some deeper cuts showed up at the Sphere: **{', '.join(sphere_only[:3])}** — the band is digging into the catalog.")
+        insights.append(f"Some deeper cuts showed up at the Sphere: **{', '.join(sphere_only[:3])}** ‚Äî the band is digging into the catalog.")
 
-    insight_text = random.choice(insights) if insights else "The numbers don't lie — this Sphere run is something special."
+    insight_text = random.choice(insights) if insights else "The numbers don't lie ‚Äî this Sphere run is something special."
 
     st.markdown(f"""
     <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:20px">
-        <div style="font-size:48px;line-height:1">🐀</div>
+        <div style="font-size:48px;line-height:1">üêÄ</div>
         <div style="background:#1a1a2e;border:1px solid #444;border-radius:12px;border-top-left-radius:2px;padding:14px 18px;max-width:640px">
             <div style="font-size:11px;color:#888;margin-bottom:4px;font-style:italic">Possum Insight</div>
             <div style="color:#F0E68C;font-size:14px;line-height:1.6">{insight_text}</div>
@@ -968,45 +971,74 @@ with tab2:
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Ask Trey section ───────────────────────────────────
-    with st.expander("🍩 Ask Trey — Will they play it at the Sphere?", expanded=False):
-        trey_q = st.text_input("Ask about any song:", placeholder="e.g. Will you play Sand? What about Tweezer?", key="trey_input")
-        if st.button("Ask Trey 🎸", key="trey_btn"):
-            if trey_q.strip():
+    # ‚îÄ‚îÄ Ask Trey section ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ
+    st.markdown("#### üç© Ask Trey ‚Äî Will they play it at the Sphere?")
+
+    with st.form("ask_trey_form", clear_on_submit=False):
+        trey_q = st.text_input(
+            "Ask about any song:",
+            placeholder="e.g. Will you play Sand? What about Tweezer?",
+            key="trey_input",
+        )
+        trey_submit = st.form_submit_button("Ask Trey üé∏")
+
+    if trey_submit:
+        if trey_q.strip():
+            try:
                 matched, answer, stats = ask_trey_st(trey_q, global_counter_t50, global_shows_t50)
-                if matched:
-                    st.markdown(f"""
-                    <div style="display:flex;align-items:flex-start;gap:14px;margin:12px 0">
-                        <div style="font-size:40px;line-height:1">🍩</div>
-                        <div style="background:#1a1a2e;border:1px solid #444;border-radius:12px;border-top-left-radius:2px;padding:14px 18px;max-width:600px">
-                            <div style="font-size:11px;color:#888;margin-bottom:6px;font-style:italic">Trey on <b style="color:#F0E68C">{matched}</b></div>
-                            <div style="color:#eeeeee;font-size:14px;line-height:1.6;font-style:italic">"{answer}"</div>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    if stats:
-                        chip_style = "display:inline-block;background:#2a2a4a;color:#7ec8e3;border:1px solid #444;border-radius:20px;padding:3px 12px;font-size:12px;margin:4px"
-                        chips_html = ""
-                        if stats.get("pct"):
-                            chips_html += f'<span style="{chip_style}">📊 {stats["pct"]}% of shows</span>'
-                        if stats.get("gap"):
-                            chips_html += f'<span style="{chip_style}">⏳ {stats["gap"]} shows since last played</span>'
-                        if stats.get("adj"):
-                            chips_html += f'<span style="{chip_style}">🎯 {stats["adj"]}% gap-adjusted</span>'
-                        if stats.get("sphere"):
-                            chips_html += f'<span style="display:inline-block;background:#3a2800;color:#FFFACD;border:1px solid #7B5800;border-radius:20px;padding:3px 12px;font-size:12px;margin:4px">★ Sphere: {", ".join(stats["sphere"])}</span>'
-                        st.markdown(f'<div style="margin-left:58px">{chips_html}</div>', unsafe_allow_html=True)
-                else:
-                    st.warning(answer)
-            else:
-                st.info("Type a song name to ask Trey!")
+                st.session_state["trey_response"] = {
+                    "matched": matched,
+                    "answer": answer,
+                    "stats": stats,
+                }
+            except Exception as e:
+                st.session_state["trey_response"] = {
+                    "matched": None,
+                    "answer": f"Something broke on my end ‚Äî {type(e).__name__}: {e}",
+                    "stats": {},
+                }
+        else:
+            st.session_state["trey_response"] = {
+                "matched": None,
+                "answer": "Type a song name to ask Trey!",
+                "stats": {},
+            }
+
+    # Render stored response (persists across reruns)
+    resp = st.session_state.get("trey_response")
+    if resp:
+        if resp["matched"]:
+            st.markdown(f"""
+            <div style="display:flex;align-items:flex-start;gap:14px;margin:12px 0">
+                <div style="font-size:40px;line-height:1">üç©</div>
+                <div style="background:#1a1a2e;border:1px solid #444;border-radius:12px;border-top-left-radius:2px;padding:14px 18px;max-width:600px">
+                    <div style="font-size:11px;color:#888;margin-bottom:6px;font-style:italic">Trey on <b style="color:#F0E68C">{resp['matched']}</b></div>
+                    <div style="color:#eeeeee;font-size:14px;line-height:1.6;font-style:italic">"{resp['answer']}"</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            stats = resp["stats"] or {}
+            chip_style = "display:inline-block;background:#2a2a4a;color:#7ec8e3;border:1px solid #444;border-radius:20px;padding:3px 12px;font-size:12px;margin:4px"
+            chips_html = ""
+            if stats.get("pct") is not None:
+                chips_html += f'<span style="{chip_style}">üìä {stats["pct"]}% of shows</span>'
+            if stats.get("gap") is not None:
+                chips_html += f'<span style="{chip_style}">‚è≥ {stats["gap"]} shows since last played</span>'
+            if stats.get("adj") is not None:
+                chips_html += f'<span style="{chip_style}">üéØ {stats["adj"]}% gap-adjusted</span>'
+            if stats.get("sphere"):
+                chips_html += f'<span style="display:inline-block;background:#3a2800;color:#FFFACD;border:1px solid #7B5800;border-radius:20px;padding:3px 12px;font-size:12px;margin:4px">‚òÖ Sphere: {", ".join(stats["sphere"])}</span>'
+            if chips_html:
+                st.markdown(f'<div style="margin-left:58px">{chips_html}</div>', unsafe_allow_html=True)
+        else:
+            st.warning(resp["answer"])
 
     st.divider()
 
-    # ── Top 50 table ───────────────────────────────────────
-    st.markdown("#### 🎵 Top 50 Most-Played Songs (2008–Present)")
+    # ‚îÄ‚îÄ Top 50 table ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ
+    st.markdown("#### üéµ Top 50 Most-Played Songs (2008‚ÄìPresent)")
     generated_ts = datetime.datetime.now().strftime("%B %d, %Y")
-    st.caption(f"Based on {global_shows_t50} shows · % = chance on any given night · ★ = played at Sphere 2026 · Updated {generated_ts}")
+    st.caption(f"Based on {global_shows_t50} shows ¬∑ % = chance on any given night ¬∑ ‚òÖ = played at Sphere 2026 ¬∑ Updated {generated_ts}")
 
     TIER_FILL_T50 = {
         "green":  ("#1B4D1B", "#90EE90"),
@@ -1033,7 +1065,7 @@ with tab2:
 
         dates_played = sphere_songs_t50.get(song, [])
         if dates_played:
-            sphere_label = "★  " + ",  ".join(d[5:] for d in sorted(dates_played))
+            sphere_label = "‚òÖ  " + ",  ".join(d[5:] for d in sorted(dates_played))
             row_bg, row_fg = SPHERE_BG_T50, SPHERE_FG_T50
         else:
             sphere_label = ""
@@ -1041,7 +1073,7 @@ with tab2:
 
         yt_query = urllib.parse.quote_plus(f"Phish {song} Sphere Las Vegas 2026")
         yt_url   = f"https://www.youtube.com/results?search_query={yt_query}"
-        yt_cell  = f'<a href="{yt_url}" target="_blank" style="color:#4FC3F7;font-weight:bold;text-decoration:none">▶ Watch</a>' if dates_played else ""
+        yt_cell  = f'<a href="{yt_url}" target="_blank" style="color:#4FC3F7;font-weight:bold;text-decoration:none">‚ñ∂ Watch</a>' if dates_played else ""
 
         t50_rows += f"""
         <tr>
@@ -1064,9 +1096,9 @@ with tab2:
     st.markdown("""
     <div style="font-size:11px;color:#666;margin-top:10px">
     <span style="background:#1B4D1B;color:#90EE90;padding:2px 6px;border-radius:4px">Green = Top 10</span> &nbsp;
-    <span style="background:#4D2E00;color:#FFB347;padding:2px 6px;border-radius:4px">Orange = Ranks 11–25</span> &nbsp;
-    <span style="background:#2E0050;color:#CE93D8;padding:2px 6px;border-radius:4px">Purple = Ranks 26–50</span> &nbsp;
-    <span style="background:#3a2800;color:#FFFACD;padding:2px 6px;border-radius:4px">★ Gold = Played at Sphere 2026</span>
+    <span style="background:#4D2E00;color:#FFB347;padding:2px 6px;border-radius:4px">Orange = Ranks 11‚Äì25</span> &nbsp;
+    <span style="background:#2E0050;color:#CE93D8;padding:2px 6px;border-radius:4px">Purple = Ranks 26‚Äì50</span> &nbsp;
+    <span style="background:#3a2800;color:#FFFACD;padding:2px 6px;border-radius:4px">‚òÖ Gold = Played at Sphere 2026</span>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1074,7 +1106,7 @@ with tab2:
     st.markdown("")
     t50_xlsx_buf = _build_top50_xlsx_buf(top50, global_shows_t50, sphere_songs_t50)
     st.download_button(
-        label="⬇️ Download Top 50 Spreadsheet (.xlsx)",
+        label="‚¨áÔ∏è Download Top 50 Spreadsheet (.xlsx)",
         data=t50_xlsx_buf,
         file_name="Top_50_Phish_Songs_Sphere.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -1082,13 +1114,13 @@ with tab2:
     )
 
 
-# ═══════════════════════════════════════════════════════════
-# TAB 3 — Sphere Setlist Predictor
-# ═══════════════════════════════════════════════════════════
+# ‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê
+# TAB 3 ‚Äî Sphere Setlist Predictor
+# ‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê
 with tab3:
-    st.markdown("### 🔮 Sphere Setlist Predictor")
-    st.caption("Predicts setlists for upcoming Sphere shows · Excludes songs already played in this run · "
-               "Boosts songs played in the last 10–15 shows prior")
+    st.markdown("### üîÆ Sphere Setlist Predictor")
+    st.caption("Predicts setlists for upcoming Sphere shows ¬∑ Excludes songs already played in this run ¬∑ "
+               "Boosts songs played in the last 10‚Äì15 shows prior")
 
     with st.spinner("Loading Sphere schedule..."):
         sphere_songs_p, sphere_dates_p = fetch_sphere_songs_st()
@@ -1100,11 +1132,11 @@ with tab3:
     # Summary of run so far
     st.markdown(f"""
     <div style="background:#1a1a2e;border:1px solid #444;border-radius:10px;padding:12px 16px;margin:12px 0">
-        <div style="color:#F0E68C;font-size:14px;font-weight:bold">🏟️ Sphere Run 2026</div>
+        <div style="color:#F0E68C;font-size:14px;font-weight:bold">üèüÔ∏è Sphere Run 2026</div>
         <div style="color:#aaaacc;font-size:12px;margin-top:4px">
-            ✓ <b>{len(played)}</b> show{'s' if len(played)!=1 else ''} played &nbsp;·&nbsp;
-            🔜 <b>{len(upcoming)}</b> upcoming &nbsp;·&nbsp;
-            🎵 <b>{len(sphere_songs_p)}</b> unique songs played so far
+            ‚úì <b>{len(played)}</b> show{'s' if len(played)!=1 else ''} played &nbsp;¬∑&nbsp;
+            üîú <b>{len(upcoming)}</b> upcoming &nbsp;¬∑&nbsp;
+            üéµ <b>{len(sphere_songs_p)}</b> unique songs played so far
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1118,7 +1150,7 @@ with tab3:
             format_func=lambda d: datetime.date.fromisoformat(d).strftime("%A, %B %d, %Y")
         )
 
-        if st.button("🎸 Generate Sphere Prediction", key="gen_sphere"):
+        if st.button("üé∏ Generate Sphere Prediction", key="gen_sphere"):
             st.session_state["sphere_result"] = generate_sphere_setlist(target_date, sphere_songs_p)
             st.session_state["sphere_target"] = target_date
 
@@ -1127,15 +1159,15 @@ with tab3:
             rows = result["rows"]
 
             pretty_date = datetime.date.fromisoformat(target_date).strftime("%B %d, %Y")
-            st.success(f"🎯 Prediction for **{pretty_date}** — {len(rows)} songs "
-                       f"· based on {result['source']} · {len(result['excluded'])} excluded (already played)")
+            st.success(f"üéØ Prediction for **{pretty_date}** ‚Äî {len(rows)} songs "
+                       f"¬∑ based on {result['source']} ¬∑ {len(result['excluded'])} excluded (already played)")
 
             if result["recent_dates"]:
-                window_label = f"{result['recent_dates'][0]} → {result['recent_dates'][-1]}"
-                st.caption(f"⚡ Recent rotation boost applied from {result['window_count']} shows "
-                           f"({window_label}) — {len(result['recent_songs'])} songs flagged.")
+                window_label = f"{result['recent_dates'][0]} ‚Üí {result['recent_dates'][-1]}"
+                st.caption(f"‚ö° Recent rotation boost applied from {result['window_count']} shows "
+                           f"({window_label}) ‚Äî {len(result['recent_songs'])} songs flagged.")
             else:
-                st.caption("⚡ No shows found in the 10–15-shows-prior window (tour hasn't run that recently).")
+                st.caption("‚ö° No shows found in the 10‚Äì15-shows-prior window (tour hasn't run that recently).")
 
             # Color-coded table
             tier_colors_p = {
@@ -1145,7 +1177,7 @@ with tab3:
                 "Rare":       "#CE93D8",
             }
 
-            hdrs = ["#", "Song", "Tier", "Vegas Freq", "Global", "Gap", "Adj Score", "Position", "🔥"]
+            hdrs = ["#", "Song", "Tier", "Vegas Freq", "Global", "Gap", "Adj Score", "Position", "üî•"]
             widths = [4, 26, 11, 11, 9, 7, 10, 12, 5]
             header_html_p = "".join(
                 f'<th style="background:#1A1A2E;color:#F0E68C;padding:8px;text-align:center;width:{w}%">{h}</th>'
@@ -1165,7 +1197,7 @@ with tab3:
 
                 tier_color = tier_colors_p.get(row["Tier"], "#FFFFFF")
                 adj_color = "#66BB6A" if row["_adj"] >= 30 else ("#42A5F5" if row["_adj"] >= 25 else fg)
-                recent_mark = "🔥" if is_recent else ""
+                recent_mark = "üî•" if is_recent else ""
 
                 body_html += f"""
                 <tr style="background:{bg};color:{fg}">
@@ -1190,9 +1222,9 @@ with tab3:
 
             st.markdown("""
             <div style="font-size:11px;color:#666;margin-top:8px">
-            🔥 = played in the last 10–15 shows (rotation boost applied) &nbsp;|&nbsp;
+            üî• = played in the last 10‚Äì15 shows (rotation boost applied) &nbsp;|&nbsp;
             <span style="background:#3a1f00;color:#FFCC80;padding:1px 4px">Orange row = recent rotation</span> &nbsp;|&nbsp;
-            <span style="background:#1A2E1A;color:#B9F6CA;padding:1px 4px">Green = bustout (gap ≥ 150)</span> &nbsp;|&nbsp;
+            <span style="background:#1A2E1A;color:#B9F6CA;padding:1px 4px">Green = bustout (gap ‚â• 150)</span> &nbsp;|&nbsp;
             <span style="background:#2E1A1A;color:#F4C2C2;padding:1px 4px">Red = closer</span>
             </div>
             """, unsafe_allow_html=True)
@@ -1204,18 +1236,18 @@ with tab3:
             closer_p = next((r for r in reversed(rows) if r["_pos"] > 0.85), rows[-1] if rows else None)
             recent_hits = [r for r in rows if r["Recent"]]
 
-            st.markdown(f"**🎯 Top pick:** {top_p['Song']} ({top_p['Adj Score']} adj score)")
+            st.markdown(f"**üéØ Top pick:** {top_p['Song']} ({top_p['Adj Score']} adj score)")
             if recent_hits:
-                st.markdown(f"**🔥 Current rotation hits:** {', '.join(r['Song'] for r in recent_hits[:6])}"
+                st.markdown(f"**üî• Current rotation hits:** {', '.join(r['Song'] for r in recent_hits[:6])}"
                             f"{'...' if len(recent_hits)>6 else ''}")
             if bustouts_p:
-                st.markdown(f"**💎 Bustout watch:** {', '.join(r['Song'] for r in bustouts_p)}")
+                st.markdown(f"**üíé Bustout watch:** {', '.join(r['Song'] for r in bustouts_p)}")
             if closer_p:
-                st.markdown(f"**🎬 Expected closer:** {closer_p['Song']}")
+                st.markdown(f"**üé¨ Expected closer:** {closer_p['Song']}")
 
             # Excluded list (already played at Sphere)
             if result["excluded"]:
-                with st.expander(f"🚫 Excluded — {len(result['excluded'])} songs already played at Sphere 2026"):
+                with st.expander(f"üö´ Excluded ‚Äî {len(result['excluded'])} songs already played at Sphere 2026"):
                     st.write(", ".join(result["excluded"]))
 
             # Download xlsx
@@ -1226,7 +1258,7 @@ with tab3:
                 result["city_shows"],
             )
             st.download_button(
-                label="⬇️ Download Sphere Prediction (.xlsx)",
+                label="‚¨áÔ∏è Download Sphere Prediction (.xlsx)",
                 data=sphere_xlsx,
                 file_name=f"Sphere_{target_date}_Prediction.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
