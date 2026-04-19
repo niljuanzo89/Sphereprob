@@ -1120,34 +1120,85 @@ def render_hero():
     remaining_plural = 's' if stats['sphere_left'] != 1 else ''
     total_sphere = stats['sphere_done'] + stats['sphere_left']
 
-    # Flying hotdogs animation (MSG NYE nod). 6 dogs, staggered, one-shot on load.
+    # Flying hotdogs (MSG NYE nod). 8 dogs, varied speeds/arcs, full-screen traversal.
     hotdog_css = """
     <style>
     .gj-hotdogs { position: fixed; inset: 0; pointer-events: none; z-index: 9999;
                   overflow: hidden; }
-    .gj-hotdog { position: absolute; font-size: 2.4rem; opacity: 0;
-                 animation: gj-fly 3.4s cubic-bezier(0.25, 0.5, 0.5, 1) forwards; }
-    @keyframes gj-fly {
-        0%   { opacity: 0; transform: translate(-10vw, 0) rotate(0deg) scale(0.8); }
-        10%  { opacity: 1; }
-        85%  { opacity: 1; }
-        100% { opacity: 0; transform: translate(115vw, -30vh) rotate(720deg) scale(1.2); }
-    }
-    .gj-h1 { top: 12%; left: 0; animation-delay: 0.1s; }
-    .gj-h2 { top: 28%; left: 0; animation-delay: 0.45s; font-size: 2.8rem; }
-    .gj-h3 { top: 46%; left: 0; animation-delay: 0.2s; font-size: 2rem; }
-    .gj-h4 { top: 62%; left: 0; animation-delay: 0.7s; }
-    .gj-h5 { top: 78%; left: 0; animation-delay: 0.35s; font-size: 2.6rem; }
-    .gj-h6 { top: 90%; left: 0; animation-delay: 0.55s; font-size: 2.2rem; }
+    .gj-hotdog { position: absolute; opacity: 0; will-change: transform; }
     @media (prefers-reduced-motion: reduce) { .gj-hotdog { display: none; } }
+
+    /* Each dog has its own arc, speed, and spin. Start at -15vw, end past 120vw. */
+    @keyframes gj-fly-1 { /* fast low arc */
+        0%   { opacity: 0; transform: translate(-15vw, 0)    rotate(0deg)    scale(0.9); }
+        8%   { opacity: 1; }
+        50%  { transform: translate(50vw, -8vh) rotate(360deg) scale(1.05); }
+        92%  { opacity: 1; }
+        100% { opacity: 0; transform: translate(125vw, -4vh)  rotate(720deg)  scale(0.9); }
+    }
+    @keyframes gj-fly-2 { /* slow high arc */
+        0%   { opacity: 0; transform: translate(-15vw, 0)    rotate(0deg)    scale(0.85); }
+        10%  { opacity: 1; }
+        50%  { transform: translate(50vw, -22vh) rotate(540deg) scale(1.15); }
+        90%  { opacity: 1; }
+        100% { opacity: 0; transform: translate(125vw, -40vh) rotate(1080deg) scale(0.8); }
+    }
+    @keyframes gj-fly-3 { /* medium dipping */
+        0%   { opacity: 0; transform: translate(-15vw, 0)    rotate(0deg)    scale(1); }
+        10%  { opacity: 1; }
+        50%  { transform: translate(50vw, 12vh)  rotate(-360deg) scale(1.1); }
+        90%  { opacity: 1; }
+        100% { opacity: 0; transform: translate(125vw, 0)     rotate(-720deg) scale(1); }
+    }
+    @keyframes gj-fly-4 { /* fast straight */
+        0%   { opacity: 0; transform: translate(-15vw, 0)    rotate(0deg)    scale(0.95); }
+        8%   { opacity: 1; }
+        50%  { transform: translate(55vw, -2vh) rotate(180deg) scale(1); }
+        92%  { opacity: 1; }
+        100% { opacity: 0; transform: translate(125vw, 4vh)   rotate(360deg)  scale(0.95); }
+    }
+    @keyframes gj-fly-5 { /* slow big arc up */
+        0%   { opacity: 0; transform: translate(-15vw, 0)    rotate(0deg)    scale(0.9); }
+        12%  { opacity: 1; }
+        50%  { transform: translate(50vw, -30vh) rotate(900deg) scale(1.25); }
+        88%  { opacity: 1; }
+        100% { opacity: 0; transform: translate(125vw, -50vh) rotate(1440deg) scale(0.75); }
+    }
+    @keyframes gj-fly-6 { /* zig-zag */
+        0%   { opacity: 0; transform: translate(-15vw, 0)    rotate(0deg)    scale(1); }
+        10%  { opacity: 1; }
+        30%  { transform: translate(25vw, -10vh) rotate(180deg); }
+        60%  { transform: translate(60vw, 8vh)   rotate(-180deg); }
+        90%  { opacity: 1; }
+        100% { opacity: 0; transform: translate(125vw, -5vh) rotate(540deg) scale(1); }
+    }
+
+    .gj-hd1 { top: 10%; left: 0; font-size: 2.2rem;
+              animation: gj-fly-1 2.6s cubic-bezier(.3,.6,.4,1) 0.05s forwards; }
+    .gj-hd2 { top: 22%; left: 0; font-size: 3.2rem;
+              animation: gj-fly-2 5.2s cubic-bezier(.25,.5,.5,1) 0.4s forwards; }
+    .gj-hd3 { top: 36%; left: 0; font-size: 2.6rem;
+              animation: gj-fly-3 3.8s cubic-bezier(.3,.6,.4,1) 0.15s forwards; }
+    .gj-hd4 { top: 50%; left: 0; font-size: 2rem;
+              animation: gj-fly-4 2.2s cubic-bezier(.35,.7,.4,1) 0.6s forwards; }
+    .gj-hd5 { top: 64%; left: 0; font-size: 2.8rem;
+              animation: gj-fly-5 4.6s cubic-bezier(.2,.5,.5,1) 0.25s forwards; }
+    .gj-hd6 { top: 76%; left: 0; font-size: 2.4rem;
+              animation: gj-fly-6 3.4s cubic-bezier(.3,.6,.4,1) 0.75s forwards; }
+    .gj-hd7 { top: 86%; left: 0; font-size: 3rem;
+              animation: gj-fly-2 5s   cubic-bezier(.25,.5,.5,1) 0.1s forwards; }
+    .gj-hd8 { top: 94%; left: 0; font-size: 2rem;
+              animation: gj-fly-1 2.4s cubic-bezier(.35,.7,.4,1) 0.9s forwards; }
     </style>
     <div class="gj-hotdogs">
-      <span class="gj-hotdog gj-h1">🌭</span>
-      <span class="gj-hotdog gj-h2">🌭</span>
-      <span class="gj-hotdog gj-h3">🌭</span>
-      <span class="gj-hotdog gj-h4">🌭</span>
-      <span class="gj-hotdog gj-h5">🌭</span>
-      <span class="gj-hotdog gj-h6">🌭</span>
+      <span class="gj-hotdog gj-hd1">🌭</span>
+      <span class="gj-hotdog gj-hd2">🌭</span>
+      <span class="gj-hotdog gj-hd3">🌭</span>
+      <span class="gj-hotdog gj-hd4">🌭</span>
+      <span class="gj-hotdog gj-hd5">🌭</span>
+      <span class="gj-hotdog gj-hd6">🌭</span>
+      <span class="gj-hotdog gj-hd7">🌭</span>
+      <span class="gj-hotdog gj-hd8">🌭</span>
     </div>
     """
     st.markdown(hotdog_css, unsafe_allow_html=True)
@@ -1255,6 +1306,100 @@ def render_methodology_footer():
 render_hero()
 
 tab1, tab2, tab3 = st.tabs(["🎸 City Predictor", "🏟️ Top 50 · Sphere 2026", "🔮 Sphere Predictor"])
+
+# ── Glowstick rain on tab change ─────────────────────────────
+# Injected via components.v1.html so the <script> actually runs.
+# The JS reaches into the parent document to attach tab-click listeners
+# and spawn glowsticks that arc from top to bottom.
+import streamlit.components.v1 as _components
+_components.html("""
+<script>
+(function() {
+    const doc = window.parent.document;
+    if (doc.__gjGlowInit) return;
+    doc.__gjGlowInit = true;
+
+    // Inject stylesheet into parent
+    const style = doc.createElement('style');
+    style.textContent = `
+    .gj-glow-layer {
+        position: fixed; inset: 0; pointer-events: none; z-index: 9998;
+        overflow: hidden;
+    }
+    .gj-glow {
+        position: absolute; top: -8vh; font-size: 1.8rem;
+        filter: drop-shadow(0 0 8px currentColor) drop-shadow(0 0 14px currentColor);
+        will-change: transform, opacity;
+    }
+    @keyframes gj-glow-arc-L {
+        0%   { opacity: 0; transform: translate(0, 0) rotate(0deg); }
+        10%  { opacity: 1; }
+        100% { opacity: 0; transform: translate(-25vw, 115vh) rotate(540deg); }
+    }
+    @keyframes gj-glow-arc-R {
+        0%   { opacity: 0; transform: translate(0, 0) rotate(0deg); }
+        10%  { opacity: 1; }
+        100% { opacity: 0; transform: translate(25vw, 115vh) rotate(-540deg); }
+    }
+    @keyframes gj-glow-arc-C {
+        0%   { opacity: 0; transform: translate(0, 0) rotate(0deg) scale(0.9); }
+        10%  { opacity: 1; }
+        100% { opacity: 0; transform: translate(0, 115vh) rotate(360deg) scale(1.1); }
+    }
+    @media (prefers-reduced-motion: reduce) { .gj-glow { display: none; } }
+    `;
+    doc.head.appendChild(style);
+
+    const colors = ['#ff3b6b', '#3bffb0', '#3bbfff', '#ffe83b', '#c13bff', '#ff8c3b'];
+    const glyphs = ['\u2728', '\uD83D\uDD6F\uFE0F', '\u2728', '\uD83C\uDF1F', '\uD83D\uDD6F\uFE0F', '\u2728'];
+
+    function spawnGlowsticks() {
+        const layer = doc.createElement('div');
+        layer.className = 'gj-glow-layer';
+        doc.body.appendChild(layer);
+
+        const N = 28;
+        for (let i = 0; i < N; i++) {
+            const s = doc.createElement('span');
+            s.className = 'gj-glow';
+            const color = colors[i % colors.length];
+            s.style.color = color;
+            s.textContent = glyphs[i % glyphs.length];
+            s.style.left = (2 + (i * 96 / N) + (Math.random() * 4 - 2)) + 'vw';
+            const dur = 2.2 + Math.random() * 1.8;
+            const delay = Math.random() * 0.9;
+            const arc = ['L', 'R', 'C'][i % 3];
+            s.style.animation = `gj-glow-arc-${arc} ${dur}s cubic-bezier(0.35, 0.1, 0.6, 1) ${delay}s forwards`;
+            s.style.fontSize = (1.4 + Math.random() * 1.2) + 'rem';
+            layer.appendChild(s);
+        }
+        setTimeout(() => layer.remove(), 5200);
+    }
+
+    function hookTabs() {
+        const tabs = doc.querySelectorAll('.stTabs [data-baseweb="tab"]');
+        if (tabs.length === 0) return false;
+        tabs.forEach(t => {
+            if (t.__gjHooked) return;
+            t.__gjHooked = true;
+            t.addEventListener('click', () => {
+                // Only spawn if user is actually switching (not re-clicking current tab)
+                if (t.getAttribute('aria-selected') === 'true') return;
+                spawnGlowsticks();
+            });
+        });
+        return true;
+    }
+
+    // Try immediately; retry if tabs aren't mounted yet
+    if (!hookTabs()) {
+        const obs = new MutationObserver(() => { if (hookTabs()) obs.disconnect(); });
+        obs.observe(doc.body, { childList: true, subtree: true });
+        setTimeout(() => obs.disconnect(), 10000);
+    }
+})();
+</script>
+""", height=0)
 
 # ═══════════════════════════════════════════════════════════
 # TAB 1 — Setlist Predictor
