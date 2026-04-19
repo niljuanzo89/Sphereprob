@@ -1110,32 +1110,65 @@ def get_hero_stats():
 
 
 def _counter_css(idx, target):
-    """Build a CSS snippet that animates an integer counter to `target` for metric #idx."""
-    return (
-        f"@property --c{idx} {{ syntax: '<integer>'; initial-value: 0; inherits: false; }}\n"
-        f".gj-count-{idx} {{ animation: gj-count-{idx} 1.6s cubic-bezier(0.2,0.7,0.3,1) 0.15s forwards; "
-        f"counter-reset: num var(--c{idx}); }}\n"
-        f".gj-count-{idx}::before {{ content: counter(num); }}\n"
-        f"@keyframes gj-count-{idx} {{ to {{ --c{idx}: {int(target)}; }} }}\n"
-    )
+    """Legacy — kept for backwards compat, now unused."""
+    return ""
 
 
 def render_hero():
-    """Render SVG logo + wordmark + tagline + metrics row with animated counters."""
+    """Render SVG logo + wordmark + tagline + metrics row + flying hotdogs."""
     stats = get_hero_stats()
-
-    counter_css = (
-        _counter_css(1, stats["shows"])
-        + _counter_css(2, stats["songs"])
-        + _counter_css(3, stats["sphere_done"])
-        + _counter_css(4, stats["unique_sphere_songs"])
-    )
-
     remaining_plural = 's' if stats['sphere_left'] != 1 else ''
     total_sphere = stats['sphere_done'] + stats['sphere_left']
+
+    # Flying hotdogs animation (MSG NYE nod). 6 dogs, staggered, one-shot on load.
+    hotdog_css = """
+    <style>
+    .gj-hotdogs { position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+                  overflow: hidden; }
+    .gj-hotdog { position: absolute; font-size: 2.4rem; opacity: 0;
+                 animation: gj-fly 3.4s cubic-bezier(0.25, 0.5, 0.5, 1) forwards; }
+    @keyframes gj-fly {
+        0%   { opacity: 0; transform: translate(-10vw, 0) rotate(0deg) scale(0.8); }
+        10%  { opacity: 1; }
+        85%  { opacity: 1; }
+        100% { opacity: 0; transform: translate(115vw, -30vh) rotate(720deg) scale(1.2); }
+    }
+    .gj-h1 { top: 12%; left: 0; animation-delay: 0.1s; }
+    .gj-h2 { top: 28%; left: 0; animation-delay: 0.45s; font-size: 2.8rem; }
+    .gj-h3 { top: 46%; left: 0; animation-delay: 0.2s; font-size: 2rem; }
+    .gj-h4 { top: 62%; left: 0; animation-delay: 0.7s; }
+    .gj-h5 { top: 78%; left: 0; animation-delay: 0.35s; font-size: 2.6rem; }
+    .gj-h6 { top: 90%; left: 0; animation-delay: 0.55s; font-size: 2.2rem; }
+    @media (prefers-reduced-motion: reduce) { .gj-hotdog { display: none; } }
+    </style>
+    <div class="gj-hotdogs">
+      <span class="gj-hotdog gj-h1">🌭</span>
+      <span class="gj-hotdog gj-h2">🌭</span>
+      <span class="gj-hotdog gj-h3">🌭</span>
+      <span class="gj-hotdog gj-h4">🌭</span>
+      <span class="gj-hotdog gj-h5">🌭</span>
+      <span class="gj-hotdog gj-h6">🌭</span>
+    </div>
+    """
+    st.markdown(hotdog_css, unsafe_allow_html=True)
+
+    # Metric values: rendered directly with a fade-up animation — reliable everywhere.
+    metric_anim_css = """
+    <style>
+    .gj-metric-value { animation: gj-metric-in 0.8s cubic-bezier(0.2,0.7,0.3,1) 0.15s both; }
+    .gj-metric:nth-child(2) .gj-metric-value { animation-delay: 0.25s; }
+    .gj-metric:nth-child(3) .gj-metric-value { animation-delay: 0.35s; }
+    .gj-metric:nth-child(4) .gj-metric-value { animation-delay: 0.45s; }
+    @keyframes gj-metric-in {
+        from { opacity: 0; transform: translateY(8px) scale(0.96); }
+        to   { opacity: 1; transform: translateY(0)   scale(1); }
+    }
+    </style>
+    """
+
     # Build all on one line per logical block; avoids markdown 4-space code-block trap.
     html_parts = [
-        f"<style>{counter_css}</style>",
+        metric_anim_css,
         '<div class="gj-hero">',
         f'<div class="gj-hero-logo">{DONUT_LOGO_SVG}</div>',
         '<div class="gj-hero-text">',
@@ -1143,19 +1176,19 @@ def render_hero():
         '<p class="gj-hero-tag">whatever you do, take care of your shoes</p>',
         '</div></div>',
         '<div class="gj-metrics">',
-        '<div class="gj-metric"><div class="gj-metric-label">Shows Analyzed</div>'
-        '<div class="gj-metric-value"><span class="gj-count-1"></span></div>'
-        '<div class="gj-metric-sub">2008 – present</div></div>',
-        '<div class="gj-metric"><div class="gj-metric-label">Unique Songs</div>'
-        '<div class="gj-metric-value"><span class="gj-count-2"></span></div>'
-        '<div class="gj-metric-sub">in the catalog</div></div>',
+        f'<div class="gj-metric"><div class="gj-metric-label">Shows Analyzed</div>'
+        f'<div class="gj-metric-value">{stats["shows"]:,}</div>'
+        f'<div class="gj-metric-sub">2008 – present</div></div>',
+        f'<div class="gj-metric"><div class="gj-metric-label">Unique Songs</div>'
+        f'<div class="gj-metric-value">{stats["songs"]:,}</div>'
+        f'<div class="gj-metric-sub">in the catalog</div></div>',
         f'<div class="gj-metric"><div class="gj-metric-label">Sphere 2026</div>'
-        f'<div class="gj-metric-value"><span class="gj-count-3"></span> '
+        f'<div class="gj-metric-value">{stats["sphere_done"]} '
         f'<span style="color:#8888a0;font-weight:400;font-size:1rem">/ {total_sphere}</span></div>'
         f'<div class="gj-metric-sub">{stats["sphere_left"]} show{remaining_plural} remaining</div></div>',
-        '<div class="gj-metric"><div class="gj-metric-label">Sphere Setlist</div>'
-        '<div class="gj-metric-value"><span class="gj-count-4"></span></div>'
-        '<div class="gj-metric-sub">unique songs so far</div></div>',
+        f'<div class="gj-metric"><div class="gj-metric-label">Sphere Setlist</div>'
+        f'<div class="gj-metric-value">{stats["unique_sphere_songs"]:,}</div>'
+        f'<div class="gj-metric-sub">unique songs so far</div></div>',
         '</div>',
     ]
     # Use st.html() (Streamlit 1.33+) — renders raw HTML without markdown parsing.
