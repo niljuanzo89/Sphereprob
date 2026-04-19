@@ -8,6 +8,7 @@ import json
 import difflib
 import random
 import datetime
+import textwrap
 import urllib.request
 import urllib.parse
 from collections import Counter, defaultdict
@@ -1010,30 +1011,28 @@ st.markdown("""
 
 # ── Logo + Hero helpers ─────────────────────────────────────────
 
-DONUT_LOGO_SVG = """
-<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="display:block">
-  <defs>
-    <radialGradient id="dough" cx="40%" cy="35%" r="65%">
-      <stop offset="0%" stop-color="#f4b8a0"/>
-      <stop offset="100%" stop-color="#d87a62"/>
-    </radialGradient>
-    <radialGradient id="frost" cx="45%" cy="35%" r="70%">
-      <stop offset="0%" stop-color="#FFE098"/>
-      <stop offset="100%" stop-color="#E8806E"/>
-    </radialGradient>
-  </defs>
-  <circle cx="32" cy="32" r="26" fill="url(#dough)" stroke="#a85a48" stroke-width="1"/>
-  <path d="M 32 8 A 24 24 0 0 1 32 56 A 24 24 0 0 1 32 8 Z
-           M 32 14 A 18 18 0 0 0 32 50 A 18 18 0 0 0 32 14 Z"
-        fill="url(#frost)" opacity="0.95"/>
-  <circle cx="32" cy="32" r="9" fill="#24243e"/>
-  <rect x="18" y="18" width="2.5" height="7" rx="1.2" fill="#FFF3B0" transform="rotate(25 19.25 21.5)"/>
-  <rect x="44" y="21" width="2.5" height="7" rx="1.2" fill="#8fd8f0" transform="rotate(-30 45.25 24.5)"/>
-  <rect x="21" y="42" width="2.5" height="7" rx="1.2" fill="#d4a8e0" transform="rotate(55 22.25 45.5)"/>
-  <rect x="41" y="41" width="2.5" height="7" rx="1.2" fill="#FFD166" transform="rotate(-50 42.25 44.5)"/>
-  <rect x="15" y="32" width="2.5" height="7" rx="1.2" fill="#B9F6CA" transform="rotate(90 16.25 35.5)"/>
-</svg>
-"""
+DONUT_LOGO_SVG = (
+    '<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="display:block">'
+    '<defs>'
+    '<radialGradient id="dough" cx="40%" cy="35%" r="65%">'
+    '<stop offset="0%" stop-color="#f4b8a0"/>'
+    '<stop offset="100%" stop-color="#d87a62"/>'
+    '</radialGradient>'
+    '<radialGradient id="frost" cx="45%" cy="35%" r="70%">'
+    '<stop offset="0%" stop-color="#FFE098"/>'
+    '<stop offset="100%" stop-color="#E8806E"/>'
+    '</radialGradient>'
+    '</defs>'
+    '<circle cx="32" cy="32" r="26" fill="url(#dough)" stroke="#a85a48" stroke-width="1"/>'
+    '<path d="M 32 8 A 24 24 0 0 1 32 56 A 24 24 0 0 1 32 8 Z M 32 14 A 18 18 0 0 0 32 50 A 18 18 0 0 0 32 14 Z" fill="url(#frost)" opacity="0.95"/>'
+    '<circle cx="32" cy="32" r="9" fill="#24243e"/>'
+    '<rect x="18" y="18" width="2.5" height="7" rx="1.2" fill="#FFF3B0" transform="rotate(25 19.25 21.5)"/>'
+    '<rect x="44" y="21" width="2.5" height="7" rx="1.2" fill="#8fd8f0" transform="rotate(-30 45.25 24.5)"/>'
+    '<rect x="21" y="42" width="2.5" height="7" rx="1.2" fill="#d4a8e0" transform="rotate(55 22.25 45.5)"/>'
+    '<rect x="41" y="41" width="2.5" height="7" rx="1.2" fill="#FFD166" transform="rotate(-50 42.25 44.5)"/>'
+    '<rect x="15" y="32" width="2.5" height="7" rx="1.2" fill="#B9F6CA" transform="rotate(90 16.25 35.5)"/>'
+    '</svg>'
+)
 
 
 @st.cache_data(ttl=600)
@@ -1079,38 +1078,40 @@ def render_hero():
         + _counter_css(4, stats["unique_sphere_songs"])
     )
 
-    st.markdown(f"""
-    <style>{counter_css}</style>
-    <div class="gj-hero">
-      <div class="gj-hero-logo">{DONUT_LOGO_SVG}</div>
-      <div class="gj-hero-text">
-        <h1>Gotta-Jibbootistics</h1>
-        <p class="gj-hero-tag">whatever you do, take care of your shoes</p>
-      </div>
-    </div>
-    <div class="gj-metrics">
-      <div class="gj-metric">
-        <div class="gj-metric-label">Shows Analyzed</div>
-        <div class="gj-metric-value"><span class="gj-count-1"></span></div>
-        <div class="gj-metric-sub">2008 – present</div>
-      </div>
-      <div class="gj-metric">
-        <div class="gj-metric-label">Unique Songs</div>
-        <div class="gj-metric-value"><span class="gj-count-2"></span></div>
-        <div class="gj-metric-sub">in the catalog</div>
-      </div>
-      <div class="gj-metric">
-        <div class="gj-metric-label">Sphere 2026</div>
-        <div class="gj-metric-value"><span class="gj-count-3"></span> <span style="color:#8888a0;font-weight:400;font-size:1rem">/ {stats['sphere_done']+stats['sphere_left']}</span></div>
-        <div class="gj-metric-sub">{stats['sphere_left']} show{'s' if stats['sphere_left']!=1 else ''} remaining</div>
-      </div>
-      <div class="gj-metric">
-        <div class="gj-metric-label">Sphere Setlist</div>
-        <div class="gj-metric-value"><span class="gj-count-4"></span></div>
-        <div class="gj-metric-sub">unique songs so far</div>
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
+    remaining_plural = 's' if stats['sphere_left'] != 1 else ''
+    total_sphere = stats['sphere_done'] + stats['sphere_left']
+    # Build all on one line per logical block; avoids markdown 4-space code-block trap.
+    html_parts = [
+        f"<style>{counter_css}</style>",
+        '<div class="gj-hero">',
+        f'<div class="gj-hero-logo">{DONUT_LOGO_SVG}</div>',
+        '<div class="gj-hero-text">',
+        '<h1>Gotta-Jibbootistics</h1>',
+        '<p class="gj-hero-tag">whatever you do, take care of your shoes</p>',
+        '</div></div>',
+        '<div class="gj-metrics">',
+        '<div class="gj-metric"><div class="gj-metric-label">Shows Analyzed</div>'
+        '<div class="gj-metric-value"><span class="gj-count-1"></span></div>'
+        '<div class="gj-metric-sub">2008 – present</div></div>',
+        '<div class="gj-metric"><div class="gj-metric-label">Unique Songs</div>'
+        '<div class="gj-metric-value"><span class="gj-count-2"></span></div>'
+        '<div class="gj-metric-sub">in the catalog</div></div>',
+        f'<div class="gj-metric"><div class="gj-metric-label">Sphere 2026</div>'
+        f'<div class="gj-metric-value"><span class="gj-count-3"></span> '
+        f'<span style="color:#8888a0;font-weight:400;font-size:1rem">/ {total_sphere}</span></div>'
+        f'<div class="gj-metric-sub">{stats["sphere_left"]} show{remaining_plural} remaining</div></div>',
+        '<div class="gj-metric"><div class="gj-metric-label">Sphere Setlist</div>'
+        '<div class="gj-metric-value"><span class="gj-count-4"></span></div>'
+        '<div class="gj-metric-sub">unique songs so far</div></div>',
+        '</div>',
+    ]
+    # Use st.html() (Streamlit 1.33+) — renders raw HTML without markdown parsing.
+    # This avoids any 4-space / HTML-block-boundary edge cases in the markdown parser.
+    try:
+        st.html("".join(html_parts))
+    except AttributeError:
+        # Fallback for older Streamlit versions
+        st.markdown("".join(html_parts), unsafe_allow_html=True)
 
 
 # ── Share-link helpers ─────────────────────────────────────
