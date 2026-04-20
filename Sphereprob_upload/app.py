@@ -80,6 +80,120 @@ def load_data():
     return global_counter, global_shows, city_data, current_gap, total_shows, song_positions
 
 
+BUSTOUT_GAP = 500
+
+
+def build_structured_setlist(scores, pos_fn, current_gap, total_shows):
+    """Select songs for a 2-set + 2-encore show structure.
+
+    Returns list of dicts: [{'song':..., 'set':'Set 1'|'Set 2'|'Encore', 'role':'Opener'|'Closer'|'E1'|'E2'|''}]
+    in play order. Enforces:
+      - Each set: 6-8 songs, exactly 1 opener + 1 closer
+      - 2 encores (E1, E2)
+      - At most 1 song with gap > 500 across the whole show (bust-out)
+    Positions in data are 0-1 across the full show (both sets + encore concatenated).
+    """
+    set1_size = random.choice([6, 7, 8])
+    set2_size = random.choice([6, 7, 8])
+
+    # Songs sorted by score, descending
+    all_cands = sorted(scores.keys(), key=lambda s: scores[s], reverse=True)
+
+    # Positional pools (score-ordered)
+    s1_opener_pool = [s for s in all_cands if pos_fn(s) < 0.20]
+    s1_closer_pool = [s for s in all_cands if 0.30 <= pos_fn(s) <= 0.50]
+    s2_opener_pool = [s for s in all_cands if 0.45 <= pos_fn(s) <= 0.65]
+    s2_closer_pool = [s for s in all_cands if 0.70 <= pos_fn(s) <= 0.90]
+    encore_pool    = [s for s in all_cands if pos_fn(s) > 0.85]
+    s1_mid_pool    = [s for s in all_cands if 0.15 <= pos_fn(s) <= 0.45]
+    s2_mid_pool    = [s for s in all_cands if 0.50 <= pos_fn(s) <= 0.85]
+
+    used = set()
+    bust_kept = False
+
+    def pick(pool):
+        nonlocal bust_kept
+        for s in pool:
+            if s in used:
+                continue
+            g = current_gap.get(s, total_shows)
+            if g > BUSTOUT_GAP and bust_kept:
+                continue
+            used.add(s)
+            if g > BUSTOUT_GAP:
+                bust_kept = True
+            return s
+        return None
+
+    def pick_fallback():
+        return pick(all_cands)
+
+    s1_open  = pick(s1_opener_pool) or pick_fallback()
+    s1_close = pick(s1_closer_pool) or pick_fallback()
+    s2_open  = pick(s2_opener_pool) or pick_fallback()
+    s2_close = pick(s2_closer_pool) or pick_fallback()
+    enc1     = pick(encore_pool)    or pick_fallback()
+    enc2     = pick(encore_pool)    or pick_fallback()
+
+    # Fill middles
+    s1_mid = []
+    for s in s1_mid_pool:
+        if len(s1_mid) >= set1_size - 2:
+            break
+        if s in used:
+            continue
+        g = current_gap.get(s, total_shows)
+        if g > BUSTOUT_GAP and bust_kept:
+            continue
+        used.add(s)
+        if g > BUSTOUT_GAP:
+            bust_kept = True
+        s1_mid.append(s)
+
+    s2_mid = []
+    for s in s2_mid_pool:
+        if len(s2_mid) >= set2_size - 2:
+            break
+        if s in used:
+            continue
+        g = current_gap.get(s, total_shows)
+        if g > BUSTOUT_GAP and bust_kept:
+            continue
+        used.add(s)
+        if g > BUSTOUT_GAP:
+            bust_kept = True
+        s2_mid.append(s)
+
+    # Top off from any remaining if pools were too thin
+    while len(s1_mid) < set1_size - 2:
+        s = pick_fallback()
+        if not s:
+            break
+        s1_mid.append(s)
+    while len(s2_mid) < set2_size - 2:
+        s = pick_fallback()
+        if not s:
+            break
+        s2_mid.append(s)
+
+    # Order middles by position
+    s1_mid.sort(key=pos_fn)
+    s2_mid.sort(key=pos_fn)
+
+    out = []
+    if s1_open:  out.append({"song": s1_open,  "set": "Set 1", "role": "Opener"})
+    for s in s1_mid:
+        out.append({"song": s, "set": "Set 1", "role": ""})
+    if s1_close: out.append({"song": s1_close, "set": "Set 1", "role": "Closer"})
+    if s2_open:  out.append({"song": s2_open,  "set": "Set 2", "role": "Opener"})
+    for s in s2_mid:
+        out.append({"song": s, "set": "Set 2", "role": ""})
+    if s2_close: out.append({"song": s2_close, "set": "Set 2", "role": "Closer"})
+    if enc1:     out.append({"song": enc1, "set": "Encore", "role": "E1"})
+    if enc2:     out.append({"song": enc2, "set": "Encore", "role": "E2"})
+    return out
+
+
 def generate_setlist(city):
     global_counter, global_shows, city_data, current_gap, total_shows, song_positions = load_data()
 
@@ -110,84 +224,29 @@ def generate_setlist(city):
         gap_boost = 1 + math.log(gap + 1) / math.log(total_shows + 1)
         scores[song] = freq * gap_boost
 
-    tier_buckets = defaultdict(list)
-    for song in scores:
-        gpct = (global_counter[song] / global_shows) * 100
-        tier_buckets[get_tier(gpct)].append(song)
-    for t in tier_buckets:
-        tier_buckets[t].sort(key=lambda s: scores[s], reverse=True)
-
-    slots = {}
-    remaining = avg_length
-    for t in ["Staple", "Common", "Occasional"]:
-        n = min(round(avg_length * TIER_TARGETS[t]), len(tier_buckets[t]))
-        slots[t] = n
-        remaining -= n
-    slots["Rare"] = max(0, min(remaining, len(tier_buckets["Rare"])))
-
-    selected = []
-    for t in ["Staple", "Common", "Occasional", "Rare"]:
-        selected.extend(tier_buckets[t][:slots[t]])
-
-    # Enforce max 1 opener (pos < 0.15) and 1 closer (pos > 0.85)
     def song_pos(s):
         return avg_position(all_positions.get(s, song_positions.get(s, [0.5])))
 
-    openers = [s for s in selected if song_pos(s) < 0.15]
-    closers  = [s for s in selected if song_pos(s) > 0.85]
-
-    removed = set()
-    for group in [openers, closers]:
-        if len(group) > 1:
-            group.sort(key=lambda s: scores[s], reverse=True)
-            for s in group[1:]:
-                selected.remove(s)
-                removed.add(s)
-
-    # Bust-out limit: at most ONE song with gap > 500 per setlist.
-    # Keep the highest-scoring, remove the rest (they'll be replaced by the fill loop).
-    BUSTOUT_GAP = 500
-    bust_cands = [s for s in selected if current_gap.get(s, total_shows) > BUSTOUT_GAP]
-    bust_cands.sort(key=lambda s: scores[s], reverse=True)
-    if len(bust_cands) > 1:
-        for s in bust_cands[1:]:
-            selected.remove(s)
-            removed.add(s)
-    bust_kept = bust_cands[0] if bust_cands else None
-
-    already = set(selected)
-    for t in ["Staple", "Common", "Occasional", "Rare"]:
-        for s in tier_buckets[t]:
-            if len(selected) >= avg_length:
-                break
-            if s in already or s in removed: continue
-            if not (0.15 <= song_pos(s) <= 0.85): continue
-            # Block additional bust-outs once one is kept
-            if current_gap.get(s, total_shows) > BUSTOUT_GAP and bust_kept is not None:
-                continue
-            selected.append(s)
-            already.add(s)
-            if current_gap.get(s, total_shows) > BUSTOUT_GAP:
-                bust_kept = s
-
-    selected.sort(key=lambda s: song_pos(s))
+    structured = build_structured_setlist(scores, song_pos, current_gap, total_shows)
 
     rows = []
-    for i, song in enumerate(selected, 1):
+    for i, entry in enumerate(structured, 1):
+        song = entry["song"]
         base_pct = (city_counter[song] / city_shows) * 100
         gpct = (global_counter[song] / global_shows) * 100
         gap = current_gap.get(song, total_shows)
         adj = scores[song] * 100
-        pos = avg_position(all_positions.get(song, song_positions.get(song, [0.5])))
-        pos_label = "Closer" if pos > 0.85 else ("Opener" if pos < 0.15 else f"{pos:.0%} thru")
+        pos = song_pos(song)
         rows.append({
             "#": i,
             "Song": song,
+            "Set": entry["set"],
+            "Role": entry["role"],
             "Tier": get_tier(gpct),
             "City Freq": f"{base_pct:.1f}%",
             "Shows Since Last Played": gap,
             "Adj Score": f"{adj:.1f}%",
-            "Show Position": pos_label,
+            "Show Position": entry["role"] if entry["role"] else f"{pos:.0%} thru",
             "Bust Out": gap > BUSTOUT_GAP,
             "_adj": adj,
             "_gap": gap,
@@ -312,85 +371,30 @@ def generate_sphere_setlist(target_date, sphere_songs_played):
         recent_boost = 1.6 if song in recent_songs else 1.0
         scores[song] = freq * gap_boost * recent_boost
 
-    # Tier buckets (based on global frequency, as in generate_setlist)
-    tier_buckets = defaultdict(list)
-    for song in scores:
-        gpct = (global_counter[song] / global_shows) * 100
-        tier_buckets[get_tier(gpct)].append(song)
-    for t in tier_buckets:
-        tier_buckets[t].sort(key=lambda s: scores[s], reverse=True)
-
-    # Quota per tier
-    slots = {}
-    remaining = avg_length
-    for t in ["Staple", "Common", "Occasional"]:
-        n = min(round(avg_length * TIER_TARGETS[t]), len(tier_buckets[t]))
-        slots[t] = n
-        remaining -= n
-    slots["Rare"] = max(0, min(remaining, len(tier_buckets["Rare"])))
-
-    selected = []
-    for t in ["Staple", "Common", "Occasional", "Rare"]:
-        selected.extend(tier_buckets[t][:slots[t]])
-
-    # Enforce 1 opener / 1 closer
     def song_pos(s):
         return avg_position(all_positions.get(s, song_positions.get(s, [0.5])))
 
-    openers = [s for s in selected if song_pos(s) < 0.15]
-    closers = [s for s in selected if song_pos(s) > 0.85]
-
-    removed = set()
-    for group in [openers, closers]:
-        if len(group) > 1:
-            group.sort(key=lambda s: scores[s], reverse=True)
-            for s in group[1:]:
-                selected.remove(s)
-                removed.add(s)
-
-    # Bust-out limit: at most ONE song with gap > 500 per setlist.
-    BUSTOUT_GAP = 500
-    bust_cands = [s for s in selected if current_gap.get(s, total_shows) > BUSTOUT_GAP]
-    bust_cands.sort(key=lambda s: scores[s], reverse=True)
-    if len(bust_cands) > 1:
-        for s in bust_cands[1:]:
-            selected.remove(s)
-            removed.add(s)
-    bust_kept = bust_cands[0] if bust_cands else None
-
-    already_in_sel = set(selected)
-    for t in ["Staple", "Common", "Occasional", "Rare"]:
-        for s in tier_buckets[t]:
-            if len(selected) >= avg_length:
-                break
-            if s in already_in_sel or s in removed: continue
-            if not (0.15 <= song_pos(s) <= 0.85): continue
-            if current_gap.get(s, total_shows) > BUSTOUT_GAP and bust_kept is not None:
-                continue
-            selected.append(s)
-            already_in_sel.add(s)
-            if current_gap.get(s, total_shows) > BUSTOUT_GAP:
-                bust_kept = s
-
-    selected.sort(key=lambda s: song_pos(s))
+    structured = build_structured_setlist(scores, song_pos, current_gap, total_shows)
 
     rows = []
-    for i, song in enumerate(selected, 1):
+    for i, entry in enumerate(structured, 1):
+        song = entry["song"]
         base_pct = (city_counter[song] / city_shows_n) * 100
         gpct     = (global_counter[song] / global_shows) * 100
         gap      = current_gap.get(song, total_shows)
         adj      = scores[song] * 100
         pos      = song_pos(song)
-        pos_label = "Closer" if pos > 0.85 else ("Opener" if pos < 0.15 else f"{pos:.0%} thru")
         rows.append({
             "#": i,
             "Song": song,
+            "Set": entry["set"],
+            "Role": entry["role"],
             "Tier": get_tier(gpct),
             "Vegas/Global Freq": f"{base_pct:.1f}%",
             "Global Freq": f"{gpct:.1f}%",
             "Shows Since Last Played": gap,
             "Adj Score": f"{adj:.1f}%",
-            "Show Position": pos_label,
+            "Show Position": entry["role"] if entry["role"] else f"{pos:.0%} thru",
             "Recent": song in recent_songs,
             "Bust Out": gap > 500,
             "_adj": adj,
@@ -1433,7 +1437,7 @@ with tab1:
                 "Rare":       "#CE93D8",
             }
 
-            header_cols = ["#", "Song", "Tier", "City Freq", "Gap", "Adj Score", "Position"]
+            header_cols = ["#", "Song", "Tier", "City Freq", "Gap", "Adj Score", "Role"]
             col_widths_pct = [4, 30, 12, 10, 8, 10, 12]
 
             header_html = "".join(
@@ -1442,16 +1446,34 @@ with tab1:
             )
 
             rows_html = ""
+            prev_set = None
             for row in rows:
-                is_closer  = row["_pos"] > 0.85
+                cur_set = row.get("Set", "")
+                if cur_set != prev_set:
+                    banner = {"Set 1":"🎸 SET 1","Set 2":"🎸 SET 2","Encore":"🎤 ENCORE"}.get(cur_set, cur_set)
+                    rows_html += (
+                        f'<tr><td colspan="7" style="background:#0d0d1e;color:#FFD54F;'
+                        f'padding:10px 8px;font-weight:700;letter-spacing:0.1em;'
+                        f'font-family:Shrikhand,cursive;font-size:1.05rem">{banner}</td></tr>'
+                    )
+                    prev_set = cur_set
+
                 is_bustout = row.get("Bust Out", False)
-                if is_closer:    bg, fg = "#2E1A1A", "#F4C2C2"
-                elif is_bustout: bg, fg = "#1A2E1A", "#B9F6CA"
+                role = row.get("Role", "")
+                is_opener = role == "Opener"
+                is_closer = role == "Closer"
+                is_encore = cur_set == "Encore"
+
+                if is_bustout:   bg, fg = "#1A2E1A", "#B9F6CA"
+                elif is_encore:  bg, fg = "#2a1a3e", "#E1BEE7"
+                elif is_closer:  bg, fg = "#2E1A1A", "#F4C2C2"
+                elif is_opener:  bg, fg = "#1a2a3e", "#B3E5FC"
                 else:            bg, fg = "#1a1a2e" if row["#"] % 2 == 0 else "#16213e", "#EEEEEE"
 
                 tier_color = tier_colors.get(row["Tier"], "#FFFFFF")
                 adj_color = "#66BB6A" if row["_adj"] >= 30 else ("#42A5F5" if row["_adj"] >= 25 else fg)
                 song_label = f"{row['Song']} ⭐ <span style='color:#B9F6CA;font-size:11px'>BUST OUT</span>" if is_bustout else row['Song']
+                role_label = role if role else "—"
 
                 rows_html += f"""
                 <tr style="background:{bg};color:{fg}">
@@ -1461,7 +1483,7 @@ with tab1:
                     <td style="text-align:center;padding:6px">{row['City Freq']}</td>
                     <td style="text-align:center;padding:6px">{row['Shows Since Last Played']}</td>
                     <td style="text-align:center;padding:6px;color:{adj_color};font-weight:bold">{row['Adj Score']}</td>
-                    <td style="text-align:center;padding:6px">{row['Show Position']}</td>
+                    <td style="text-align:center;padding:6px">{role_label}</td>
                 </tr>"""
 
             table_html = f"""
@@ -1475,8 +1497,10 @@ with tab1:
             st.markdown("""
             <div style="font-size:11px;color:#666;margin-top:8px">
             🟡 Staple &nbsp;|&nbsp; 🔵 Common &nbsp;|&nbsp; 🟢 Occasional &nbsp;|&nbsp; 🟣 Rare &nbsp;|&nbsp;
-            <span style="background:#1A2E1A;color:#B9F6CA;padding:1px 4px">Dark green ⭐ = Bust Out (gap > 500, max 1 per setlist)</span> &nbsp;|&nbsp;
-            <span style="background:#2E1A1A;color:#F4C2C2;padding:1px 4px">Dark red = closer</span>
+            <span style="background:#1a2a3e;color:#B3E5FC;padding:1px 4px">Blue = opener</span> &nbsp;|&nbsp;
+            <span style="background:#2E1A1A;color:#F4C2C2;padding:1px 4px">Red = closer</span> &nbsp;|&nbsp;
+            <span style="background:#2a1a3e;color:#E1BEE7;padding:1px 4px">Purple = encore</span> &nbsp;|&nbsp;
+            <span style="background:#1A2E1A;color:#B9F6CA;padding:1px 4px">Green ⭐ = Bust Out (gap > 500)</span>
             </div>
             """, unsafe_allow_html=True)
 
@@ -1485,13 +1509,17 @@ with tab1:
             # Highlights
             top = max(rows, key=lambda r: r["_adj"])
             bustouts = [r for r in rows if r.get("Bust Out")]
-            closer = next((r for r in reversed(rows) if r["_pos"] > 0.85), rows[-1])
+            encores = [r for r in rows if r.get("Set") == "Encore"]
+            s2_closer = next((r for r in rows if r.get("Set")=="Set 2" and r.get("Role")=="Closer"), None)
 
             st.markdown(f"**Top pick:** {top['Song']} ({top['Adj Score']} adj score) — the most probable song based on city history and gap.")
             if bustouts:
                 b = bustouts[0]
                 st.markdown(f"**⭐ Bust Out:** {b['Song']} — overdue by {b['_gap']} shows.")
-            st.markdown(f"**Expected closer:** {closer['Song']}")
+            if s2_closer:
+                st.markdown(f"**Set 2 closer:** {s2_closer['Song']}")
+            if encores:
+                st.markdown(f"**Encore:** {' → '.join(e['Song'] for e in encores)}")
 
             # Share link
             render_share_box({"city": city}, key="city")
@@ -1819,7 +1847,7 @@ with tab3:
                 "Rare":       "#CE93D8",
             }
 
-            hdrs = ["#", "Song", "Tier", "Vegas Freq", "Global", "Gap", "Adj Score", "Position", "🔥"]
+            hdrs = ["#", "Song", "Tier", "Vegas Freq", "Global", "Gap", "Adj Score", "Role", "🔥"]
             widths = [4, 26, 11, 11, 9, 7, 10, 12, 5]
             header_html_p = "".join(
                 f'<th style="background:#1A1A2E;color:#F0E68C;padding:8px;text-align:center;width:{w}%">{h}</th>'
@@ -1827,20 +1855,37 @@ with tab3:
             )
 
             body_html = ""
+            prev_set_p = None
             for row in rows:
-                is_closer  = row["_pos"] > 0.85
+                cur_set = row.get("Set", "")
+                if cur_set != prev_set_p:
+                    banner = {"Set 1":"🎸 SET 1","Set 2":"🎸 SET 2","Encore":"🎤 ENCORE"}.get(cur_set, cur_set)
+                    body_html += (
+                        f'<tr><td colspan="9" style="background:#0d0d1e;color:#FFD54F;'
+                        f'padding:10px 8px;font-weight:700;letter-spacing:0.1em;'
+                        f'font-family:Shrikhand,cursive;font-size:1.05rem">{banner}</td></tr>'
+                    )
+                    prev_set_p = cur_set
+
                 is_bustout = row.get("Bust Out", False)
                 is_recent  = row["Recent"]
+                role = row.get("Role", "")
+                is_opener = role == "Opener"
+                is_closer = role == "Closer"
+                is_encore = cur_set == "Encore"
 
-                if is_recent:    bg, fg = "#3a1f00", "#FFCC80"
+                if is_bustout:   bg, fg = "#1A2E1A", "#B9F6CA"
+                elif is_recent:  bg, fg = "#3a1f00", "#FFCC80"
+                elif is_encore:  bg, fg = "#2a1a3e", "#E1BEE7"
                 elif is_closer:  bg, fg = "#2E1A1A", "#F4C2C2"
-                elif is_bustout: bg, fg = "#1A2E1A", "#B9F6CA"
+                elif is_opener:  bg, fg = "#1a2a3e", "#B3E5FC"
                 else:            bg, fg = ("#1a1a2e" if row["#"] % 2 == 0 else "#16213e"), "#EEEEEE"
 
                 tier_color = tier_colors_p.get(row["Tier"], "#FFFFFF")
                 adj_color = "#66BB6A" if row["_adj"] >= 30 else ("#42A5F5" if row["_adj"] >= 25 else fg)
                 recent_mark = "🔥" if is_recent else ""
                 song_label = f"{row['Song']} ⭐ <span style='color:#B9F6CA;font-size:11px'>BUST OUT</span>" if is_bustout else row['Song']
+                role_label = role if role else "—"
 
                 body_html += f"""
                 <tr style="background:{bg};color:{fg}">
@@ -1851,7 +1896,7 @@ with tab3:
                     <td style="text-align:center;padding:6px">{row['Global Freq']}</td>
                     <td style="text-align:center;padding:6px">{row['Shows Since Last Played']}</td>
                     <td style="text-align:center;padding:6px;color:{adj_color};font-weight:bold">{row['Adj Score']}</td>
-                    <td style="text-align:center;padding:6px">{row['Show Position']}</td>
+                    <td style="text-align:center;padding:6px">{role_label}</td>
                     <td style="text-align:center;padding:6px;font-size:16px">{recent_mark}</td>
                 </tr>"""
 
@@ -1865,10 +1910,11 @@ with tab3:
 
             st.markdown("""
             <div style="font-size:11px;color:#666;margin-top:8px">
-            🔥 = played in the last 10–15 shows (rotation boost applied) &nbsp;|&nbsp;
-            <span style="background:#3a1f00;color:#FFCC80;padding:1px 4px">Orange row = recent rotation</span> &nbsp;|&nbsp;
-            <span style="background:#1A2E1A;color:#B9F6CA;padding:1px 4px">Green ⭐ = Bust Out (gap > 500, max 1 per setlist)</span> &nbsp;|&nbsp;
-            <span style="background:#2E1A1A;color:#F4C2C2;padding:1px 4px">Red = closer</span>
+            🔥 = recent rotation (last 10–15 shows) &nbsp;|&nbsp;
+            <span style="background:#1a2a3e;color:#B3E5FC;padding:1px 4px">Blue = opener</span> &nbsp;|&nbsp;
+            <span style="background:#2E1A1A;color:#F4C2C2;padding:1px 4px">Red = closer</span> &nbsp;|&nbsp;
+            <span style="background:#2a1a3e;color:#E1BEE7;padding:1px 4px">Purple = encore</span> &nbsp;|&nbsp;
+            <span style="background:#1A2E1A;color:#B9F6CA;padding:1px 4px">Green ⭐ = Bust Out (gap > 500)</span>
             </div>
             """, unsafe_allow_html=True)
 
@@ -1876,7 +1922,8 @@ with tab3:
             st.divider()
             top_p = max(rows, key=lambda r: r["_adj"])
             bustouts_p = [r for r in rows if r.get("Bust Out")]
-            closer_p = next((r for r in reversed(rows) if r["_pos"] > 0.85), rows[-1] if rows else None)
+            s2_closer_p = next((r for r in rows if r.get("Set")=="Set 2" and r.get("Role")=="Closer"), None)
+            encores_p = [r for r in rows if r.get("Set") == "Encore"]
             recent_hits = [r for r in rows if r["Recent"]]
 
             st.markdown(f"**🎯 Top pick:** {top_p['Song']} ({top_p['Adj Score']} adj score)")
@@ -1886,8 +1933,10 @@ with tab3:
             if bustouts_p:
                 b = bustouts_p[0]
                 st.markdown(f"**⭐ Bust Out:** {b['Song']} — overdue by {b['_gap']} shows.")
-            if closer_p:
-                st.markdown(f"**🎬 Expected closer:** {closer_p['Song']}")
+            if s2_closer_p:
+                st.markdown(f"**🎬 Set 2 closer:** {s2_closer_p['Song']}")
+            if encores_p:
+                st.markdown(f"**🎤 Encore:** {' → '.join(e['Song'] for e in encores_p)}")
 
             # Share link
             render_share_box({"sphere_date": target_date}, key="sphere")
