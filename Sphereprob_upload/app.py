@@ -1309,6 +1309,163 @@ def render_methodology_footer():
 
 render_hero()
 
+
+@st.cache_data(ttl=1800)
+def _compute_last_night_accuracy():
+    """Compute accuracy metrics for the most recently played Sphere show.
+    Returns dict or None if no prior show / not enough data."""
+    try:
+        sphere_songs, sphere_dates = fetch_sphere_songs_st()
+    except Exception:
+        return None
+    today_iso = datetime.date.today().isoformat()
+    played = sorted(d for d in sphere_dates if d <= today_iso)
+    if not played:
+        return None
+    last_show = played[-1]
+    actual = sorted([s for s, ds in sphere_songs.items() if last_show in ds])
+    if not actual:
+        return None
+    prior = {s: [d for d in ds if d < last_show] for s, ds in sphere_songs.items()}
+    prior = {s: ds for s, ds in prior.items() if ds}
+    try:
+        retro = generate_sphere_setlist(last_show, prior)
+        predicted = [r["Song"] for r in retro["rows"]]
+    except Exception:
+        return None
+    if not predicted:
+        return None
+    pred_set = set(predicted)
+    act_set  = set(actual)
+    hits     = pred_set & act_set
+    return {
+        "date": last_show,
+        "predicted": predicted,
+        "actual": actual,
+        "hits": sorted(hits),
+        "misses": sorted(pred_set - act_set),
+        "precision": len(hits) / len(pred_set),
+        "recall": len(hits) / len(act_set),
+    }
+
+
+def render_last_night_accuracy_banner():
+    """Prominent banner on the main page showing last night's prediction accuracy."""
+    acc = _compute_last_night_accuracy()
+    if not acc:
+        return
+
+    pretty = datetime.date.fromisoformat(acc["date"]).strftime("%b %d")
+    prec = acc["precision"] * 100
+    rec  = acc["recall"] * 100
+    # Color tone based on precision
+    if prec >= 50:
+        tone, accent = "#81C784", "rgba(129, 199, 132, 0.5)"
+    elif prec >= 25:
+        tone, accent = "#FFD54F", "rgba(255, 213, 79, 0.5)"
+    else:
+        tone, accent = "#FF8A65", "rgba(255, 138, 101, 0.5)"
+
+    hit_pills = "".join(
+        f'<span style="background:rgba(129,199,132,0.15);color:#B9F6CA;'
+        f'padding:3px 9px;border-radius:12px;font-size:11.5px;margin:2px 3px;'
+        f'display:inline-block;border:1px solid rgba(129,199,132,0.3)">✓ {s}</span>'
+        for s in acc["hits"]
+    ) or '<span style="color:#666;font-size:11px">None this time</span>'
+
+    miss_pills = "".join(
+        f'<span style="background:rgba(255,138,101,0.12);color:#F4A88E;'
+        f'padding:3px 9px;border-radius:12px;font-size:11.5px;margin:2px 3px;'
+        f'display:inline-block;border:1px solid rgba(255,138,101,0.25)">✗ {s}</span>'
+        for s in acc["misses"]
+    ) or '<span style="color:#666;font-size:11px">No misses</span>'
+
+    st.markdown(f"""
+    <style>
+    .gj-accuracy-banner {{
+        background: linear-gradient(135deg, rgba(46,46,76,0.92) 0%, rgba(30,30,52,0.92) 100%);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-left: 4px solid {tone};
+        border-radius: 14px;
+        padding: 18px 22px;
+        margin: 18px 0 22px 0;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.35), 0 0 0 1px {accent};
+        animation: gj-acc-pulse 0.9s ease-out;
+    }}
+    @keyframes gj-acc-pulse {{
+        from {{ transform: translateY(6px); opacity: 0; }}
+        to   {{ transform: translateY(0);   opacity: 1; }}
+    }}
+    .gj-acc-title {{
+        color: {tone};
+        font-size: 12.5px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+    }}
+    .gj-acc-grid {{
+        display: grid;
+        grid-template-columns: 1.2fr 1fr 1fr;
+        gap: 18px;
+        align-items: center;
+    }}
+    .gj-acc-big {{
+        color: #FFF3B0;
+        font-family: 'Shrikhand', cursive;
+        font-size: 2.6rem;
+        line-height: 1;
+        margin-bottom: 2px;
+    }}
+    .gj-acc-label {{
+        color: #9a9ab0;
+        font-size: 10.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }}
+    .gj-acc-sub {{
+        color: #c8c8dc;
+        font-size: 11.5px;
+        margin-top: 2px;
+    }}
+    </style>
+    <div class="gj-accuracy-banner">
+        <div class="gj-acc-title">📊 Last Night's Prediction — {pretty}</div>
+        <div class="gj-acc-grid">
+            <div>
+                <div class="gj-acc-big">{len(acc['hits'])}<span style="color:#666;font-size:1.2rem"> / {len(acc['predicted'])}</span></div>
+                <div class="gj-acc-label">Hits</div>
+                <div class="gj-acc-sub">{len(acc['actual'])} songs played · {len(acc['predicted'])} predicted</div>
+            </div>
+            <div>
+                <div class="gj-acc-big" style="color:{tone}">{prec:.0f}%</div>
+                <div class="gj-acc-label">Precision</div>
+                <div class="gj-acc-sub">predicted songs that played</div>
+            </div>
+            <div>
+                <div class="gj-acc-big" style="color:{tone}">{rec:.0f}%</div>
+                <div class="gj-acc-label">Recall</div>
+                <div class="gj-acc-sub">of setlist we predicted</div>
+            </div>
+        </div>
+        <details style="margin-top:14px">
+            <summary style="color:#c8c8dc;font-size:12px;cursor:pointer;user-select:none;
+                            padding:6px 0;font-weight:500">
+                See hits &amp; misses
+            </summary>
+            <div style="margin-top:8px">
+                <div style="color:#B9F6CA;font-size:11px;font-weight:700;letter-spacing:0.06em;margin-bottom:5px">✓ HITS ({len(acc['hits'])})</div>
+                <div>{hit_pills}</div>
+                <div style="color:#F4A88E;font-size:11px;font-weight:700;letter-spacing:0.06em;margin:12px 0 5px 0">✗ MISSES ({len(acc['misses'])})</div>
+                <div>{miss_pills}</div>
+            </div>
+        </details>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+render_last_night_accuracy_banner()
+
 tab1, tab2, tab3 = st.tabs(["🎸 City Predictor", "🏟️ Top 50 · Sphere 2026", "🔮 Sphere Predictor"])
 
 # ── Glowstick rain on tab change ─────────────────────────────
@@ -1843,83 +2000,7 @@ with tab3:
         </div>
         """, unsafe_allow_html=True)
 
-    # ─── Last Night's Accuracy ───────────────────────────────
-    if len(played) >= 1:
-        last_show_date = played[-1]
-        # Actual setlist from last show
-        actual_songs = sorted([s for s, ds in sphere_songs_p.items() if last_show_date in ds])
-
-        if actual_songs:
-            # Retro-prediction: what we WOULD have predicted before that show.
-            # Build a filtered sphere_songs dict containing only dates strictly before last_show_date.
-            prior_sphere_songs = {}
-            for song, ds in sphere_songs_p.items():
-                prior = [d for d in ds if d < last_show_date]
-                if prior:
-                    prior_sphere_songs[song] = prior
-
-            try:
-                retro = generate_sphere_setlist(last_show_date, prior_sphere_songs)
-                predicted_songs = [r["Song"] for r in retro["rows"]]
-            except Exception:
-                predicted_songs = []
-
-            if predicted_songs:
-                pred_set   = set(predicted_songs)
-                actual_set = set(actual_songs)
-                hits       = pred_set & actual_set
-                precision  = len(hits) / len(pred_set)   if pred_set   else 0
-                recall     = len(hits) / len(actual_set) if actual_set else 0
-
-                pretty_last = datetime.date.fromisoformat(last_show_date).strftime("%b %d")
-
-                hit_tags = "".join(
-                    f'<span style="background:#1A2E1A;color:#B9F6CA;padding:2px 8px;'
-                    f'border-radius:10px;font-size:11px;margin:2px 3px;display:inline-block">'
-                    f'✓ {s}</span>'
-                    for s in sorted(hits)
-                )
-                miss_tags = "".join(
-                    f'<span style="background:#2a1a1a;color:#F4A88E;padding:2px 8px;'
-                    f'border-radius:10px;font-size:11px;margin:2px 3px;display:inline-block">'
-                    f'✗ {s}</span>'
-                    for s in sorted(pred_set - actual_set)
-                )
-
-                st.markdown(f"""
-                <div class="gj-card" style="border-left:3px solid #4FC3F7;margin-top:12px">
-                    <div style="color:#4FC3F7;font-size:14px;font-weight:700;letter-spacing:0.04em">
-                        📊 LAST NIGHT'S ACCURACY — {pretty_last}
-                    </div>
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0">
-                        <div>
-                            <div style="color:#9a9ab0;font-size:10.5px;text-transform:uppercase;letter-spacing:0.08em">Hits</div>
-                            <div style="color:#B9F6CA;font-size:1.6rem;font-weight:700">{len(hits)}<span style="color:#666;font-size:1rem"> / {len(pred_set)}</span></div>
-                        </div>
-                        <div>
-                            <div style="color:#9a9ab0;font-size:10.5px;text-transform:uppercase;letter-spacing:0.08em">Precision</div>
-                            <div style="color:#FFF3B0;font-size:1.6rem;font-weight:700">{precision*100:.0f}%</div>
-                            <div style="color:#666;font-size:10px">predicted that played</div>
-                        </div>
-                        <div>
-                            <div style="color:#9a9ab0;font-size:10.5px;text-transform:uppercase;letter-spacing:0.08em">Recall</div>
-                            <div style="color:#FFF3B0;font-size:1.6rem;font-weight:700">{recall*100:.0f}%</div>
-                            <div style="color:#666;font-size:10px">of setlist predicted</div>
-                        </div>
-                    </div>
-                    <details style="margin-top:6px">
-                        <summary style="color:#c8c8dc;font-size:12px;cursor:pointer;user-select:none">
-                            See predicted vs. actual
-                        </summary>
-                        <div style="margin-top:10px">
-                            <div style="color:#B9F6CA;font-size:11px;font-weight:700;letter-spacing:0.05em;margin-bottom:4px">✓ HITS ({len(hits)})</div>
-                            <div>{hit_tags or '<span style="color:#666;font-size:11px">None</span>'}</div>
-                            <div style="color:#F4A88E;font-size:11px;font-weight:700;letter-spacing:0.05em;margin:10px 0 4px 0">✗ MISSES — predicted but not played ({len(pred_set - actual_set)})</div>
-                            <div>{miss_tags or '<span style="color:#666;font-size:11px">None</span>'}</div>
-                        </div>
-                    </details>
-                </div>
-                """, unsafe_allow_html=True)
+    # (Last Night's Accuracy is now shown prominently at the top of the page.)
 
     if not upcoming:
         st.info("No remaining Sphere shows on the schedule. Check back after the next tour is announced!")
