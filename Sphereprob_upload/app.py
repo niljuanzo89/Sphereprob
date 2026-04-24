@@ -1806,6 +1806,121 @@ with tab3:
     </div>
     """, unsafe_allow_html=True)
 
+    # ─── Repeat Alert ────────────────────────────────────────
+    repeats = sorted(
+        [(song, dates) for song, dates in sphere_songs_p.items() if len(dates) > 1],
+        key=lambda x: (-len(x[1]), x[0])
+    )
+    if repeats:
+        repeat_rows = "".join(
+            f'<div style="display:flex;justify-content:space-between;padding:4px 0;'
+            f'border-bottom:1px solid rgba(255,255,255,0.06)">'
+            f'<span style="color:#FFE082;font-weight:600">{song}</span>'
+            f'<span style="color:#c8c8dc;font-size:12px">'
+            f'{len(dates)}× — {", ".join(d[5:] for d in sorted(dates))}</span></div>'
+            for song, dates in repeats
+        )
+        st.markdown(f"""
+        <div class="gj-card" style="border-left:3px solid #FF8A65;margin-top:12px">
+            <div style="color:#FF8A65;font-size:14px;font-weight:700;letter-spacing:0.04em">
+                🔁 REPEAT ALERT — {len(repeats)} song{'s' if len(repeats)!=1 else ''} repeated this run
+            </div>
+            <div style="color:#9a9ab0;font-size:11.5px;margin:4px 0 10px 0">
+                Phish normally avoids repeats within a single run. These songs have returned.
+            </div>
+            {repeat_rows}
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div class="gj-card" style="border-left:3px solid #81C784;margin-top:12px">
+            <div style="color:#81C784;font-size:14px;font-weight:700;letter-spacing:0.04em">
+                ✅ No repeats yet this run
+            </div>
+            <div style="color:#9a9ab0;font-size:11.5px;margin-top:4px">
+                Every song so far has only been played once at the 2026 Sphere run.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # ─── Last Night's Accuracy ───────────────────────────────
+    if len(played) >= 1:
+        last_show_date = played[-1]
+        # Actual setlist from last show
+        actual_songs = sorted([s for s, ds in sphere_songs_p.items() if last_show_date in ds])
+
+        if actual_songs:
+            # Retro-prediction: what we WOULD have predicted before that show.
+            # Build a filtered sphere_songs dict containing only dates strictly before last_show_date.
+            prior_sphere_songs = {}
+            for song, ds in sphere_songs_p.items():
+                prior = [d for d in ds if d < last_show_date]
+                if prior:
+                    prior_sphere_songs[song] = prior
+
+            try:
+                retro = generate_sphere_setlist(last_show_date, prior_sphere_songs)
+                predicted_songs = [r["Song"] for r in retro["rows"]]
+            except Exception:
+                predicted_songs = []
+
+            if predicted_songs:
+                pred_set   = set(predicted_songs)
+                actual_set = set(actual_songs)
+                hits       = pred_set & actual_set
+                precision  = len(hits) / len(pred_set)   if pred_set   else 0
+                recall     = len(hits) / len(actual_set) if actual_set else 0
+
+                pretty_last = datetime.date.fromisoformat(last_show_date).strftime("%b %d")
+
+                hit_tags = "".join(
+                    f'<span style="background:#1A2E1A;color:#B9F6CA;padding:2px 8px;'
+                    f'border-radius:10px;font-size:11px;margin:2px 3px;display:inline-block">'
+                    f'✓ {s}</span>'
+                    for s in sorted(hits)
+                )
+                miss_tags = "".join(
+                    f'<span style="background:#2a1a1a;color:#F4A88E;padding:2px 8px;'
+                    f'border-radius:10px;font-size:11px;margin:2px 3px;display:inline-block">'
+                    f'✗ {s}</span>'
+                    for s in sorted(pred_set - actual_set)
+                )
+
+                st.markdown(f"""
+                <div class="gj-card" style="border-left:3px solid #4FC3F7;margin-top:12px">
+                    <div style="color:#4FC3F7;font-size:14px;font-weight:700;letter-spacing:0.04em">
+                        📊 LAST NIGHT'S ACCURACY — {pretty_last}
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0">
+                        <div>
+                            <div style="color:#9a9ab0;font-size:10.5px;text-transform:uppercase;letter-spacing:0.08em">Hits</div>
+                            <div style="color:#B9F6CA;font-size:1.6rem;font-weight:700">{len(hits)}<span style="color:#666;font-size:1rem"> / {len(pred_set)}</span></div>
+                        </div>
+                        <div>
+                            <div style="color:#9a9ab0;font-size:10.5px;text-transform:uppercase;letter-spacing:0.08em">Precision</div>
+                            <div style="color:#FFF3B0;font-size:1.6rem;font-weight:700">{precision*100:.0f}%</div>
+                            <div style="color:#666;font-size:10px">predicted that played</div>
+                        </div>
+                        <div>
+                            <div style="color:#9a9ab0;font-size:10.5px;text-transform:uppercase;letter-spacing:0.08em">Recall</div>
+                            <div style="color:#FFF3B0;font-size:1.6rem;font-weight:700">{recall*100:.0f}%</div>
+                            <div style="color:#666;font-size:10px">of setlist predicted</div>
+                        </div>
+                    </div>
+                    <details style="margin-top:6px">
+                        <summary style="color:#c8c8dc;font-size:12px;cursor:pointer;user-select:none">
+                            See predicted vs. actual
+                        </summary>
+                        <div style="margin-top:10px">
+                            <div style="color:#B9F6CA;font-size:11px;font-weight:700;letter-spacing:0.05em;margin-bottom:4px">✓ HITS ({len(hits)})</div>
+                            <div>{hit_tags or '<span style="color:#666;font-size:11px">None</span>'}</div>
+                            <div style="color:#F4A88E;font-size:11px;font-weight:700;letter-spacing:0.05em;margin:10px 0 4px 0">✗ MISSES — predicted but not played ({len(pred_set - actual_set)})</div>
+                            <div>{miss_tags or '<span style="color:#666;font-size:11px">None</span>'}</div>
+                        </div>
+                    </details>
+                </div>
+                """, unsafe_allow_html=True)
+
     if not upcoming:
         st.info("No remaining Sphere shows on the schedule. Check back after the next tour is announced!")
     else:
