@@ -1325,7 +1325,11 @@ def render_methodology_footer():
         """)
     st.markdown(
         '<div class="gj-footer">Gotta-Jibbootistics · built by a fan, for fans · '
-        'data via <a href="https://phish.net" style="color:#8fd8f0">phish.net</a></div>',
+        'data via <a href="https://phish.net" style="color:#8fd8f0">phish.net</a><br>'
+        '<span style="font-size:11px;color:#9a9ab0">'
+        'Created by <b style="color:#FFE98A">Nils Lewis</b> · '
+        'Data analysis by <b style="color:#FFE98A">Dr. Alexandra VanBergen</b>'
+        '</span></div>',
         unsafe_allow_html=True
     )
 
@@ -1957,6 +1961,103 @@ with tab2:
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         key="dl_top50"
     )
+
+    # ── Top 50 Bingo Card ──────────────────────────────────
+    st.divider()
+    st.markdown("#### 🎲 Top 50 Bingo Card")
+    st.caption("A 5×5 bingo card drawn from the all-time Top 50. "
+               "Tier-coloured by rank · ★ marks songs already played at the Sphere this run.")
+
+    if st.button("🎲 Generate Top 50 Bingo", key="gen_t50_bingo"):
+        # Sample 24 songs (center = FREE) weighted lightly by rank so top songs
+        # appear more often, but ranks 26-50 still get representation.
+        pool = [(s, c) for s, c in top50]
+        ranks = {s: i + 1 for i, (s, _) in enumerate(pool)}
+
+        top_tier  = [s for s, _ in pool[:10]]
+        mid_tier  = [s for s, _ in pool[10:25]]
+        deep_tier = [s for s, _ in pool[25:50]]
+
+        # Pick a balanced spread: 8 top, 9 mid, 7 deep = 24 squares
+        random.shuffle(top_tier); random.shuffle(mid_tier); random.shuffle(deep_tier)
+        picks = top_tier[:8] + mid_tier[:9] + deep_tier[:7]
+        random.shuffle(picks)
+
+        cards = []
+        for i, song in enumerate(picks):
+            rank = ranks.get(song, 99)
+            cat  = "setlist" if rank <= 10 else ("common" if rank <= 25 else "rare")
+            cards.append({"song": song, "cat": cat, "played": bool(sphere_songs_t50.get(song))})
+            if i == 11:  # insert FREE at index 12 (center of 5×5)
+                cards.append({"song": "★ FREE ★", "cat": "setlist", "played": False, "free": True})
+        # Ensure exactly 25 cells (in case of off-by-one when picks list shifts)
+        cards = cards[:25]
+        while len(cards) < 25:
+            cards.append({"song": "★ FREE ★", "cat": "setlist", "played": False, "free": True})
+
+        st.session_state["t50_bingo"] = cards
+
+    if st.session_state.get("t50_bingo"):
+        bcards_t50 = st.session_state["t50_bingo"]
+        cat_styles_t50 = {
+            "setlist": "background:#1B4D1B;color:#90EE90;border:1px solid #2d6b2d",
+            "common":  "background:#4D2E00;color:#FFB347;border:1px solid #6e4910",
+            "rare":    "background:#2E0050;color:#CE93D8;border:1px solid #4d1882",
+        }
+        played_overlay = ("background:linear-gradient(135deg,#3a2800 0%,#5a3d00 100%);"
+                          "color:#FFFACD;border:1.5px solid #FFD54F;"
+                          "box-shadow:0 0 6px rgba(255,213,79,0.35)")
+        free_style = ("background:linear-gradient(135deg,#5a3d00,#3a2800);color:#FFF3B0;"
+                      "border:1.5px solid #FFD54F;font-family:'Shrikhand',cursive")
+        cell_style_t50 = ("padding:10px 6px;text-align:center;font-size:12px;"
+                          "font-weight:600;border-radius:8px;min-height:68px;"
+                          "display:flex;align-items:center;justify-content:center;word-break:break-word;")
+
+        bcol_h = st.columns(5)
+        for col, label in zip(bcol_h, ["B", "I", "N", "G", "O"]):
+            col.markdown(
+                f'<div style="text-align:center;font-size:26px;font-weight:700;'
+                f'color:#FFF3B0;letter-spacing:0.05em;font-family:Shrikhand,cursive">{label}</div>',
+                unsafe_allow_html=True
+            )
+        for row_i in range(5):
+            cols = st.columns(5)
+            for col_i, col in enumerate(cols):
+                card = bcards_t50[row_i * 5 + col_i]
+                if card.get("free"):
+                    style = free_style
+                    label = card["song"]
+                elif card.get("played"):
+                    style = played_overlay
+                    label = "★ " + card["song"]
+                else:
+                    style = cat_styles_t50[card["cat"]]
+                    label = card["song"]
+                col.markdown(
+                    f'<div style="{style};{cell_style_t50}">{label}</div>',
+                    unsafe_allow_html=True
+                )
+
+        st.markdown("""
+        <div style="font-size:11px;color:#888;margin-top:10px">
+        <span style="background:#1B4D1B;color:#90EE90;padding:2px 6px;border-radius:4px">Top 10</span> &nbsp;
+        <span style="background:#4D2E00;color:#FFB347;padding:2px 6px;border-radius:4px">11–25</span> &nbsp;
+        <span style="background:#2E0050;color:#CE93D8;padding:2px 6px;border-radius:4px">26–50</span> &nbsp;
+        <span style="background:#3a2800;color:#FFFACD;padding:2px 6px;border-radius:4px">★ Played at Sphere</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # PDF download — strip the extra fields the PDF builder doesn't know about
+        pdf_cards = [{"song": c["song"], "cat": c["cat"]} for c in bcards_t50]
+        pdf_buf_t50 = build_bingo_pdf(pdf_cards, "Top 50 All-Time")
+        st.markdown("")
+        st.download_button(
+            label="⬇️ Download Printable Bingo PDF",
+            data=pdf_buf_t50,
+            file_name="Top_50_Bingo.pdf",
+            mime="application/pdf",
+            key="dl_t50_bingo_pdf",
+        )
 
 
 # ═══════════════════════════════════════════════════════════
