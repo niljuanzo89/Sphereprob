@@ -1520,6 +1520,167 @@ def render_last_night_accuracy_banner():
 
 render_last_night_accuracy_banner()
 
+
+# ─────────────────────────────────────────────────────────────
+# Lenny the Lizard — Clippy-style mascot in bottom-right corner
+# Offers rotating tips. Click → jump+spin + new tip.
+# ─────────────────────────────────────────────────────────────
+def render_lenny_lizard():
+    import streamlit.components.v1 as _components
+    _components.html(r"""
+    <script>
+    (function() {
+        const doc = window.parent.document;
+        if (doc.__lennyInit) return;
+        doc.__lennyInit = true;
+
+        const TIPS = [
+            "Welcome to Gotta-Jibbootistics! I'm Lenny. Click me for tips!",
+            "🎸 The City Predictor builds a setlist for any city Phish has played.",
+            "🏟️ Check the Top 50 tab to see Phish's most-played songs since 2008.",
+            "🔮 The Sphere Predictor uses Las Vegas-specific data + recent rotation.",
+            "🎲 Try the 3×3 Quick Bingo for a fast game — perfect for one-set bets!",
+            "★ A FREE square sits in the center of every bingo card.",
+            "🚨 Songs gone 500+ shows get flagged as BUST OUTs (max 1 per setlist).",
+            "📊 Last night's prediction accuracy is right under the title.",
+            "🍩 Curious about a song? Ask Trey on the Top 50 tab!",
+            "⬇️ All bingo cards download as printable PDFs.",
+            "🟡 Yellow = top picks · 🔵 Blue = common · 🟣 Purple = rare deep cuts.",
+            "Did you know? You Enjoy Myself is the most-played Phish song.",
+            "Tap a tab and watch the glowsticks rain. 🌟",
+        ];
+
+        // Build mascot
+        const wrap = doc.createElement('div');
+        wrap.id = 'lenny-wrap';
+        wrap.innerHTML = `
+            <div id="lenny-bubble">
+                <span id="lenny-text"></span>
+                <button id="lenny-close" aria-label="Close">×</button>
+            </div>
+            <div id="lenny-char" title="Click me for a tip!">🦎</div>
+        `;
+        doc.body.appendChild(wrap);
+
+        const css = doc.createElement('style');
+        css.textContent = `
+            #lenny-wrap {
+                position: fixed; right: 20px; bottom: 20px;
+                z-index: 99999; display: flex; align-items: flex-end; gap: 10px;
+                pointer-events: none;
+            }
+            #lenny-char {
+                pointer-events: auto;
+                font-size: 56px; line-height: 1;
+                cursor: pointer; user-select: none;
+                filter: drop-shadow(0 4px 10px rgba(0,0,0,0.55))
+                        drop-shadow(0 0 8px rgba(143,216,240,0.35));
+                transition: transform 0.18s ease;
+                animation: lenny-idle 3.4s ease-in-out infinite;
+                transform-origin: 50% 90%;
+            }
+            #lenny-char:hover { transform: scale(1.12) rotate(-6deg); }
+            #lenny-char.jump  { animation: lenny-jump 0.8s ease-in-out; }
+            @keyframes lenny-idle {
+                0%, 100% { transform: translateY(0)    rotate(0); }
+                50%      { transform: translateY(-6px) rotate(3deg); }
+            }
+            @keyframes lenny-jump {
+                0%   { transform: translateY(0)     rotate(0)    scale(1); }
+                25%  { transform: translateY(-55px) rotate(180deg) scale(1.1); }
+                55%  { transform: translateY(-90px) rotate(540deg) scale(1.15); }
+                80%  { transform: translateY(-20px) rotate(720deg) scale(1.05); }
+                100% { transform: translateY(0)     rotate(720deg) scale(1); }
+            }
+            #lenny-bubble {
+                pointer-events: auto;
+                max-width: 240px;
+                background: linear-gradient(135deg, #fffbe6 0%, #fff3b0 100%);
+                color: #3a2800;
+                padding: 12px 30px 12px 14px;
+                border-radius: 14px;
+                border: 2px solid #FFD54F;
+                box-shadow: 0 6px 22px rgba(0,0,0,0.45),
+                            0 0 0 2px rgba(255,213,79,0.25);
+                font-family: 'Outfit', -apple-system, sans-serif;
+                font-size: 13px; line-height: 1.45; font-weight: 500;
+                position: relative;
+                opacity: 0; transform: translateY(8px) scale(0.9);
+                transition: opacity 0.25s ease, transform 0.25s ease;
+                pointer-events: none;
+            }
+            #lenny-bubble.show {
+                opacity: 1; transform: translateY(0) scale(1);
+                pointer-events: auto;
+            }
+            #lenny-bubble::after {
+                content: ''; position: absolute;
+                right: -10px; bottom: 14px;
+                width: 0; height: 0;
+                border: 8px solid transparent;
+                border-left-color: #FFD54F;
+            }
+            #lenny-close {
+                position: absolute; top: 4px; right: 6px;
+                background: none; border: none; cursor: pointer;
+                color: #6b4a00; font-size: 18px; line-height: 1;
+                padding: 2px 6px; border-radius: 50%;
+                font-weight: 700;
+            }
+            #lenny-close:hover { background: rgba(0,0,0,0.08); }
+        `;
+        doc.head.appendChild(css);
+
+        const charEl   = doc.getElementById('lenny-char');
+        const bubble   = doc.getElementById('lenny-bubble');
+        const textEl   = doc.getElementById('lenny-text');
+        const closeBtn = doc.getElementById('lenny-close');
+
+        let tipIdx = 0;
+        let autoTimer = null;
+        let bubbleVisible = false;
+
+        function showTip(idx) {
+            textEl.textContent = TIPS[idx % TIPS.length];
+            bubble.classList.add('show');
+            bubbleVisible = true;
+            clearTimeout(autoTimer);
+            autoTimer = setTimeout(hideBubble, 9000);
+        }
+        function hideBubble() {
+            bubble.classList.remove('show');
+            bubbleVisible = false;
+        }
+        function nextTip() {
+            tipIdx = (tipIdx + 1) % TIPS.length;
+            showTip(tipIdx);
+        }
+
+        charEl.addEventListener('click', () => {
+            charEl.classList.remove('jump');
+            // force reflow so animation re-triggers
+            void charEl.offsetWidth;
+            charEl.classList.add('jump');
+            nextTip();
+        });
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            hideBubble();
+        });
+
+        // Greet on first load after a short pause
+        setTimeout(() => showTip(0), 1500);
+        // Periodic gentle reminder if hidden
+        setInterval(() => {
+            if (!bubbleVisible) showTip((tipIdx + 1) % TIPS.length);
+        }, 45000);
+    })();
+    </script>
+    """, height=0)
+
+
+render_lenny_lizard()
+
 tab1, tab2, tab3 = st.tabs(["🎸 City Predictor", "🏟️ Top 50 · Sphere 2026", "🔮 Sphere Predictor"])
 
 # ── Glowstick rain on tab change ─────────────────────────────
