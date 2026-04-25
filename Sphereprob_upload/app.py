@@ -2373,11 +2373,11 @@ with tab3:
                 bingo_cards = _inject_free_center(bingo_cards, sphere_bsize)
                 st.session_state["sphere_bingo"] = bingo_cards
                 st.session_state["sphere_bingo_date"] = target_date
-                st.session_state["sphere_bingo_size"] = sphere_bsize
+                st.session_state["sphere_bingo_used_size"] = sphere_bsize
 
             if (st.session_state.get("sphere_bingo")
                     and st.session_state.get("sphere_bingo_date") == target_date
-                    and st.session_state.get("sphere_bingo_size") == sphere_bsize):
+                    and st.session_state.get("sphere_bingo_used_size") == sphere_bsize):
                 bcards = st.session_state["sphere_bingo"]
                 cat_styles = {
                     "setlist": "background:#3a3a10;color:#FFF3B0;border:1px solid #5a5a22",
