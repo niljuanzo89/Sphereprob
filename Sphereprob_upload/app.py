@@ -1324,12 +1324,8 @@ def render_methodology_footer():
         Setlists scraped from [phish.net](https://phish.net) covering 2008 through the current tour. Updated weekly.
         """)
     st.markdown(
-        '<div class="gj-footer">Gotta-Jibbootistics · built by a fan, for fans · '
-        'data via <a href="https://phish.net" style="color:#8fd8f0">phish.net</a><br>'
-        '<span style="font-size:11px;color:#9a9ab0">'
-        'Created by <b style="color:#FFE98A">Nils Lewis</b> · '
-        'Data analysis by <b style="color:#FFE98A">Dr. Alexandra VanBergen</b>'
-        '</span></div>',
+        '<div class="gj-footer">Gotta-Jibbootistics · by fans for fans · '
+        'data via <a href="https://phish.net" style="color:#8fd8f0">phish.net</a></div>',
         unsafe_allow_html=True
     )
 
