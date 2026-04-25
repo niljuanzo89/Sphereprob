@@ -1558,7 +1558,94 @@ def render_lenny_lizard():
                 <span id="lenny-text"></span>
                 <button id="lenny-close" aria-label="Close">×</button>
             </div>
-            <div id="lenny-char" title="Click me for a tip!">🦎</div>
+            <div id="lenny-char" title="Click me for a tip!">
+              <svg id="lenny-svg" viewBox="0 0 220 150" width="92" height="63" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <radialGradient id="lz-body" cx="45%" cy="25%" r="80%">
+                    <stop offset="0%"  stop-color="#c8f08f"/>
+                    <stop offset="35%" stop-color="#7cc04a"/>
+                    <stop offset="75%" stop-color="#3a8a25"/>
+                    <stop offset="100%" stop-color="#0e3a0e"/>
+                  </radialGradient>
+                  <radialGradient id="lz-belly" cx="50%" cy="40%" r="70%">
+                    <stop offset="0%"  stop-color="#fffbe6"/>
+                    <stop offset="55%" stop-color="#dff5a8"/>
+                    <stop offset="100%" stop-color="#7caf38"/>
+                  </radialGradient>
+                  <radialGradient id="lz-eye" cx="40%" cy="30%" r="80%">
+                    <stop offset="0%"  stop-color="#ffffff"/>
+                    <stop offset="60%" stop-color="#fff3b0"/>
+                    <stop offset="100%" stop-color="#b89800"/>
+                  </radialGradient>
+                  <radialGradient id="lz-leg" cx="50%" cy="20%" r="80%">
+                    <stop offset="0%"  stop-color="#9bd56a"/>
+                    <stop offset="100%" stop-color="#1f5a18"/>
+                  </radialGradient>
+                  <linearGradient id="lz-tongue" x1="0" x2="1">
+                    <stop offset="0%"  stop-color="#ff5fa2"/>
+                    <stop offset="100%" stop-color="#c11860"/>
+                  </linearGradient>
+                </defs>
+
+                <!-- Tail (animated wag) -->
+                <g id="lz-tail-grp" style="transform-origin: 55px 78px;">
+                  <path d="M 55,78 Q 18,72 14,42 Q 18,18 48,28 Q 38,40 38,55 Q 40,68 60,72 Z"
+                        fill="url(#lz-body)" stroke="#0e3a0e" stroke-width="0.8"/>
+                  <path d="M 35,32 Q 30,42 36,52" stroke="#0e3a0e" stroke-width="1" fill="none" opacity="0.5"/>
+                </g>
+
+                <!-- Back legs -->
+                <ellipse cx="70"  cy="118" rx="11" ry="16" fill="url(#lz-leg)"/>
+                <ellipse cx="70"  cy="130" rx="9"  ry="5"  fill="#1a4d12"/>
+                <path d="M 62,131 l -3,5 m 6,-5 l 0,5 m 6,-5 l 3,5" stroke="#0e3a0e" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+
+                <!-- Body (main mass) -->
+                <ellipse cx="110" cy="88" rx="62" ry="32" fill="url(#lz-body)" stroke="#0e3a0e" stroke-width="0.8"/>
+                <!-- Belly highlight -->
+                <ellipse cx="108" cy="105" rx="44" ry="14" fill="url(#lz-belly)" opacity="0.85"/>
+                <!-- Top-light highlight strip -->
+                <ellipse cx="100" cy="68" rx="36" ry="6" fill="#ffffff" opacity="0.22"/>
+
+                <!-- Spots -->
+                <circle cx="92"  cy="78" r="3" fill="#1f5a18" opacity="0.7"/>
+                <circle cx="108" cy="72" r="3.4" fill="#1f5a18" opacity="0.7"/>
+                <circle cx="124" cy="76" r="3" fill="#1f5a18" opacity="0.7"/>
+                <circle cx="140" cy="82" r="2.6" fill="#1f5a18" opacity="0.6"/>
+
+                <!-- Front legs -->
+                <ellipse cx="148" cy="116" rx="11" ry="16" fill="url(#lz-leg)"/>
+                <ellipse cx="148" cy="128" rx="9"  ry="5"  fill="#1a4d12"/>
+                <path d="M 140,129 l -3,5 m 6,-5 l 0,5 m 6,-5 l 3,5" stroke="#0e3a0e" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+
+                <!-- Head -->
+                <ellipse cx="172" cy="82" rx="26" ry="22" fill="url(#lz-body)" stroke="#0e3a0e" stroke-width="0.8"/>
+                <!-- Jaw / cheek highlight -->
+                <ellipse cx="172" cy="92" rx="22" ry="8" fill="url(#lz-belly)" opacity="0.85"/>
+                <!-- Mouth line -->
+                <path d="M 158,92 Q 178,98 196,90" stroke="#0e3a0e" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+                <!-- Tongue (animated flick) -->
+                <path id="lz-tongue-path" d="M 192,91 q 14,0 18,6 l -4,1 q -2,-2 -6,-2 q 4,3 4,5 l -3,0 q -2,-3 -6,-4 z"
+                      fill="url(#lz-tongue)" opacity="0"/>
+
+                <!-- Eye socket shadow -->
+                <ellipse cx="178" cy="71" rx="9" ry="8" fill="#0e3a0e" opacity="0.5"/>
+                <!-- Eyeball -->
+                <ellipse id="lz-eyeball" cx="178" cy="72" rx="7.5" ry="7" fill="url(#lz-eye)"/>
+                <!-- Pupil -->
+                <ellipse cx="180" cy="73" rx="2.6" ry="4.5" fill="#000"/>
+                <!-- Pupil glint -->
+                <circle cx="181.5" cy="71" r="1.4" fill="#fff"/>
+                <!-- Eyelid (animated blink) -->
+                <ellipse id="lz-lid" cx="178" cy="72" rx="9" ry="8" fill="#3a8a25" stroke="#0e3a0e" stroke-width="0.6"/>
+
+                <!-- Nostril -->
+                <ellipse cx="194" cy="84" rx="1.4" ry="1" fill="#0e3a0e"/>
+
+                <!-- Crest spikes along back -->
+                <path d="M 75,62 l 4,-7 l 4,7 M 95,57 l 4,-7 l 4,7 M 115,55 l 4,-8 l 4,8 M 135,58 l 4,-7 l 4,7"
+                      fill="#0e3a0e" opacity="0.85"/>
+              </svg>
+            </div>
         `;
         doc.body.appendChild(wrap);
 
@@ -1573,25 +1660,51 @@ def render_lenny_lizard():
             #lenny-char {
                 position: relative;
                 pointer-events: auto;
-                font-size: 64px; line-height: 1;
+                line-height: 0;
                 cursor: pointer; user-select: none;
-                /* Layered shadows give a sense of depth & contact w/ ground */
+                /* Layered shadows for depth and ground contact */
                 filter:
-                    drop-shadow(0 1px 0 rgba(255,255,255,0.35))
-                    drop-shadow(0 6px 4px rgba(0,0,0,0.45))
+                    drop-shadow(0 6px 4px rgba(0,0,0,0.5))
                     drop-shadow(0 14px 10px rgba(0,0,0,0.35))
-                    drop-shadow(0 0 12px rgba(143,216,240,0.4));
-                /* text-shadow adds an inner highlight + rim for 3D pop */
-                text-shadow:
-                    0 1px 0 rgba(255,255,255,0.6),
-                    0 -1px 0 rgba(0,0,0,0.4),
-                    1px 0 0 rgba(0,0,0,0.25),
-                    -1px 0 0 rgba(255,255,255,0.25);
+                    drop-shadow(0 0 14px rgba(143,216,240,0.35));
                 transform-style: preserve-3d;
                 transform-origin: 50% 92%;
                 transition: transform 0.18s ease;
                 animation: lenny-idle 4.2s ease-in-out infinite;
                 will-change: transform;
+            }
+            /* Tail wag */
+            #lz-tail-grp {
+                transform-origin: 55px 78px;
+                transform-box: fill-box;
+                animation: lz-tail 1.6s ease-in-out infinite;
+            }
+            @keyframes lz-tail {
+                0%, 100% { transform: rotate(-12deg); }
+                50%      { transform: rotate(14deg);  }
+            }
+            /* Tongue flicks every few seconds */
+            #lz-tongue-path {
+                transform-origin: 192px 91px;
+                transform-box: fill-box;
+                animation: lz-tongue 3.8s ease-in-out infinite;
+            }
+            @keyframes lz-tongue {
+                0%, 78%, 100% { opacity: 0; transform: scaleX(0.4); }
+                82%           { opacity: 1; transform: scaleX(1); }
+                90%           { opacity: 1; transform: scaleX(0.85); }
+                95%           { opacity: 0; transform: scaleX(0.5); }
+            }
+            /* Blink: lid scales open/closed (default = scaleY 0 = open) */
+            #lz-lid {
+                transform-origin: 178px 72px;
+                transform-box: fill-box;
+                transform: scaleY(0);
+                animation: lz-blink 5.2s ease-in-out infinite;
+            }
+            @keyframes lz-blink {
+                0%, 92%, 100% { transform: scaleY(0); }
+                95%           { transform: scaleY(1); }
             }
             #lenny-char::after {
                 /* Soft elliptical ground shadow that pulses with the bob */
