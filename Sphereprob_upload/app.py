@@ -820,6 +820,28 @@ st.markdown("""
     }
     #MainMenu { visibility: hidden; }
 
+    /* Dark-theme expanders so they don't show as white bars on the dark page */
+    div[data-testid="stExpander"],
+    div[data-testid="stExpander"] > details,
+    div[data-testid="stExpander"] details > summary {
+        background: rgba(20, 20, 36, 0.55) !important;
+        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        border-radius: 10px !important;
+        color: #F5F5F7 !important;
+    }
+    div[data-testid="stExpander"] details > summary {
+        border: none !important;
+        color: #FFE98A !important;
+    }
+    div[data-testid="stExpander"] details > summary:hover {
+        color: #FFF3B0 !important;
+    }
+    div[data-testid="stExpander"] details[open] > summary {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+        border-radius: 10px 10px 0 0 !important;
+    }
+    div[data-testid="stExpander"] svg { fill: #FFE98A !important; }
+
     /* Refined content card */
     .block-container {
         background: rgba(20, 20, 36, 0.78);
@@ -1322,9 +1344,15 @@ def _compute_last_night_accuracy():
     played = sorted(d for d in sphere_dates if d <= today_iso)
     if not played:
         return None
-    last_show = played[-1]
-    actual = sorted([s for s, ds in sphere_songs.items() if last_show in ds])
-    if not actual:
+    # Walk back from today: skip any "scheduled but not yet played" dates
+    # (the API lists them but they have no setlist data yet).
+    last_show, actual = None, []
+    for d in reversed(played):
+        songs_for_d = sorted([s for s, ds in sphere_songs.items() if d in ds])
+        if songs_for_d:
+            last_show, actual = d, songs_for_d
+            break
+    if not last_show:
         return None
     prior = {s: [d for d in ds if d < last_show] for s, ds in sphere_songs.items()}
     prior = {s: ds for s, ds in prior.items() if ds}
