@@ -1559,26 +1559,31 @@ def render_lenny_lizard():
                 <button id="lenny-close" aria-label="Close">×</button>
             </div>
             <div id="lenny-char" title="Click me for a tip!">
-              <svg id="lenny-svg" viewBox="0 0 220 150" width="92" height="63" xmlns="http://www.w3.org/2000/svg">
+              <svg id="lenny-svg" viewBox="0 0 260 180" width="106" height="73" xmlns="http://www.w3.org/2000/svg">
                 <defs>
-                  <radialGradient id="lz-body" cx="45%" cy="25%" r="80%">
-                    <stop offset="0%"  stop-color="#c8f08f"/>
-                    <stop offset="35%" stop-color="#7cc04a"/>
-                    <stop offset="75%" stop-color="#3a8a25"/>
+                  <radialGradient id="lz-body" cx="50%" cy="20%" r="85%">
+                    <stop offset="0%"  stop-color="#dff7a4"/>
+                    <stop offset="40%" stop-color="#86c84e"/>
+                    <stop offset="80%" stop-color="#3a8a25"/>
                     <stop offset="100%" stop-color="#0e3a0e"/>
                   </radialGradient>
-                  <radialGradient id="lz-belly" cx="50%" cy="40%" r="70%">
+                  <radialGradient id="lz-head" cx="40%" cy="25%" r="80%">
+                    <stop offset="0%"  stop-color="#e4faae"/>
+                    <stop offset="55%" stop-color="#82c64a"/>
+                    <stop offset="100%" stop-color="#1f5a18"/>
+                  </radialGradient>
+                  <radialGradient id="lz-belly" cx="50%" cy="35%" r="65%">
                     <stop offset="0%"  stop-color="#fffbe6"/>
-                    <stop offset="55%" stop-color="#dff5a8"/>
-                    <stop offset="100%" stop-color="#7caf38"/>
+                    <stop offset="60%" stop-color="#fff099"/>
+                    <stop offset="100%" stop-color="#c79a14"/>
                   </radialGradient>
-                  <radialGradient id="lz-eye" cx="40%" cy="30%" r="80%">
-                    <stop offset="0%"  stop-color="#ffffff"/>
-                    <stop offset="60%" stop-color="#fff3b0"/>
-                    <stop offset="100%" stop-color="#b89800"/>
+                  <radialGradient id="lz-eye" cx="38%" cy="28%" r="85%">
+                    <stop offset="0%"  stop-color="#fff8c2"/>
+                    <stop offset="55%" stop-color="#ffcc33"/>
+                    <stop offset="100%" stop-color="#a76d00"/>
                   </radialGradient>
-                  <radialGradient id="lz-leg" cx="50%" cy="20%" r="80%">
-                    <stop offset="0%"  stop-color="#9bd56a"/>
+                  <radialGradient id="lz-leg" cx="50%" cy="18%" r="85%">
+                    <stop offset="0%"  stop-color="#b9e36e"/>
                     <stop offset="100%" stop-color="#1f5a18"/>
                   </radialGradient>
                   <linearGradient id="lz-tongue" x1="0" x2="1">
@@ -1587,63 +1592,103 @@ def render_lenny_lizard():
                   </linearGradient>
                 </defs>
 
-                <!-- Tail (animated wag) -->
-                <g id="lz-tail-grp" style="transform-origin: 55px 78px;">
-                  <path d="M 55,78 Q 18,72 14,42 Q 18,18 48,28 Q 38,40 38,55 Q 40,68 60,72 Z"
-                        fill="url(#lz-body)" stroke="#0e3a0e" stroke-width="0.8"/>
-                  <path d="M 35,32 Q 30,42 36,52" stroke="#0e3a0e" stroke-width="1" fill="none" opacity="0.5"/>
+                <!-- ── TAIL: long curling shape on the right (animated wag) ── -->
+                <g id="lz-tail-grp">
+                  <path d="M 175,118
+                           Q 230,118 240,80
+                           Q 245,40 215,42
+                           Q 235,55 220,80
+                           Q 205,100 175,102 Z"
+                        fill="url(#lz-body)" stroke="#0e3a0e" stroke-width="1"/>
+                  <!-- yellow dots running down the tail -->
+                  <circle cx="200" cy="100" r="2.6" fill="#ffd54f"/>
+                  <circle cx="215" cy="92"  r="2.6" fill="#ffd54f"/>
+                  <circle cx="226" cy="78"  r="2.4" fill="#ffd54f"/>
+                  <circle cx="226" cy="62"  r="2.2" fill="#ffd54f"/>
+                  <circle cx="218" cy="50"  r="2"   fill="#ffd54f"/>
                 </g>
 
-                <!-- Back legs -->
-                <ellipse cx="70"  cy="118" rx="11" ry="16" fill="url(#lz-leg)"/>
-                <ellipse cx="70"  cy="130" rx="9"  ry="5"  fill="#1a4d12"/>
-                <path d="M 62,131 l -3,5 m 6,-5 l 0,5 m 6,-5 l 3,5" stroke="#0e3a0e" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+                <!-- ── BACK LEG (right side, bent outward) ── -->
+                <g transform="rotate(-12 165 138)">
+                  <ellipse cx="165" cy="138" rx="16" ry="10" fill="url(#lz-leg)" stroke="#0e3a0e" stroke-width="0.6"/>
+                </g>
+                <!-- back foot with toes -->
+                <path d="M 152,148 q -4,3 -10,2  M 154,150 q -4,5 -3,9  M 158,152 q 0,5 3,8  M 163,151 q 3,5 7,6"
+                      stroke="#0e3a0e" stroke-width="1.6" fill="none" stroke-linecap="round"/>
 
-                <!-- Body (main mass) -->
-                <ellipse cx="110" cy="88" rx="62" ry="32" fill="url(#lz-body)" stroke="#0e3a0e" stroke-width="0.8"/>
-                <!-- Belly highlight -->
-                <ellipse cx="108" cy="105" rx="44" ry="14" fill="url(#lz-belly)" opacity="0.85"/>
-                <!-- Top-light highlight strip -->
-                <ellipse cx="100" cy="68" rx="36" ry="6" fill="#ffffff" opacity="0.22"/>
+                <!-- ── BODY (main mass) ── -->
+                <ellipse cx="120" cy="115" rx="58" ry="22" fill="url(#lz-body)" stroke="#0e3a0e" stroke-width="0.9"/>
+                <!-- soft yellow underbelly -->
+                <ellipse cx="120" cy="125" rx="42" ry="9" fill="url(#lz-belly)" opacity="0.85"/>
+                <!-- top highlight strip -->
+                <ellipse cx="115" cy="100" rx="40" ry="4" fill="#ffffff" opacity="0.22"/>
+                <!-- yellow spots running along body -->
+                <circle cx="90"  cy="108" r="3"   fill="#ffd54f"/>
+                <circle cx="108" cy="102" r="3.2" fill="#ffd54f"/>
+                <circle cx="128" cy="100" r="3"   fill="#ffd54f"/>
+                <circle cx="148" cy="105" r="2.8" fill="#ffd54f"/>
+                <circle cx="167" cy="110" r="2.6" fill="#ffd54f"/>
+                <circle cx="100" cy="118" r="2"   fill="#ffd54f" opacity="0.7"/>
+                <circle cx="138" cy="120" r="2"   fill="#ffd54f" opacity="0.7"/>
 
-                <!-- Spots -->
-                <circle cx="92"  cy="78" r="3" fill="#1f5a18" opacity="0.7"/>
-                <circle cx="108" cy="72" r="3.4" fill="#1f5a18" opacity="0.7"/>
-                <circle cx="124" cy="76" r="3" fill="#1f5a18" opacity="0.7"/>
-                <circle cx="140" cy="82" r="2.6" fill="#1f5a18" opacity="0.6"/>
+                <!-- ── FRONT LEG ── -->
+                <g transform="rotate(14 80 138)">
+                  <ellipse cx="80" cy="138" rx="16" ry="10" fill="url(#lz-leg)" stroke="#0e3a0e" stroke-width="0.6"/>
+                </g>
+                <!-- front foot with toes splayed -->
+                <path d="M 67,148 q -5,2 -10,0  M 68,150 q -5,5 -4,9  M 73,152 q -1,5 2,9  M 78,152 q 2,5 6,7"
+                      stroke="#0e3a0e" stroke-width="1.6" fill="none" stroke-linecap="round"/>
 
-                <!-- Front legs -->
-                <ellipse cx="148" cy="116" rx="11" ry="16" fill="url(#lz-leg)"/>
-                <ellipse cx="148" cy="128" rx="9"  ry="5"  fill="#1a4d12"/>
-                <path d="M 140,129 l -3,5 m 6,-5 l 0,5 m 6,-5 l 3,5" stroke="#0e3a0e" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+                <!-- ── NECK (curve from body to head) ── -->
+                <path d="M 75,108 Q 60,90 60,75 Q 70,95 88,108 Z"
+                      fill="url(#lz-body)" stroke="#0e3a0e" stroke-width="0.8"/>
+                <!-- Yellow throat patch -->
+                <ellipse cx="62" cy="88" rx="11" ry="9" fill="url(#lz-belly)" opacity="0.9"/>
 
-                <!-- Head -->
-                <ellipse cx="172" cy="82" rx="26" ry="22" fill="url(#lz-body)" stroke="#0e3a0e" stroke-width="0.8"/>
-                <!-- Jaw / cheek highlight -->
-                <ellipse cx="172" cy="92" rx="22" ry="8" fill="url(#lz-belly)" opacity="0.85"/>
-                <!-- Mouth line -->
-                <path d="M 158,92 Q 178,98 196,90" stroke="#0e3a0e" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-                <!-- Tongue (animated flick) -->
-                <path id="lz-tongue-path" d="M 192,91 q 14,0 18,6 l -4,1 q -2,-2 -6,-2 q 4,3 4,5 l -3,0 q -2,-3 -6,-4 z"
+                <!-- ── HEAD: big rounded shape ── -->
+                <ellipse cx="55" cy="62" rx="38" ry="32" fill="url(#lz-head)" stroke="#0e3a0e" stroke-width="0.9"/>
+                <!-- Top highlight on the head -->
+                <ellipse cx="48" cy="44" rx="22" ry="6" fill="#ffffff" opacity="0.28"/>
+
+                <!-- ── BIG TOOTHY GRIN ── -->
+                <!-- Outer mouth curve -->
+                <path d="M 22,68 Q 55,92 88,68" stroke="#0e3a0e" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+                <!-- Mouth interior (white) -->
+                <path d="M 26,69 Q 55,86 84,69 Q 55,74 26,69 Z" fill="#ffffff" stroke="#0e3a0e" stroke-width="0.7"/>
+                <!-- Tooth dividers -->
+                <line x1="34" y1="71" x2="34" y2="76" stroke="#bbbbbb" stroke-width="0.6"/>
+                <line x1="42" y1="74" x2="42" y2="79" stroke="#bbbbbb" stroke-width="0.6"/>
+                <line x1="50" y1="76" x2="50" y2="81" stroke="#bbbbbb" stroke-width="0.6"/>
+                <line x1="60" y1="76" x2="60" y2="81" stroke="#bbbbbb" stroke-width="0.6"/>
+                <line x1="68" y1="74" x2="68" y2="79" stroke="#bbbbbb" stroke-width="0.6"/>
+                <line x1="76" y1="71" x2="76" y2="76" stroke="#bbbbbb" stroke-width="0.6"/>
+                <!-- Cheek pink blush -->
+                <ellipse cx="22" cy="64" rx="5" ry="3" fill="#ff9aa6" opacity="0.45"/>
+                <ellipse cx="86" cy="64" rx="5" ry="3" fill="#ff9aa6" opacity="0.45"/>
+                <!-- Tongue (flicks out) -->
+                <path id="lz-tongue-path"
+                      d="M 55,84 q -2,8 -8,10 q 4,2 8,0 q 4,2 8,0 q -6,-2 -8,-10 z"
                       fill="url(#lz-tongue)" opacity="0"/>
 
-                <!-- Eye socket shadow -->
-                <ellipse cx="178" cy="71" rx="9" ry="8" fill="#0e3a0e" opacity="0.5"/>
-                <!-- Eyeball -->
-                <ellipse id="lz-eyeball" cx="178" cy="72" rx="7.5" ry="7" fill="url(#lz-eye)"/>
-                <!-- Pupil -->
-                <ellipse cx="180" cy="73" rx="2.6" ry="4.5" fill="#000"/>
-                <!-- Pupil glint -->
-                <circle cx="181.5" cy="71" r="1.4" fill="#fff"/>
-                <!-- Eyelid (animated blink) -->
-                <ellipse id="lz-lid" cx="178" cy="72" rx="9" ry="8" fill="#3a8a25" stroke="#0e3a0e" stroke-width="0.6"/>
+                <!-- ── BIG BULGING EYES on top of head ── -->
+                <!-- Left eye (front-left) -->
+                <ellipse cx="32" cy="32" rx="15" ry="16" fill="url(#lz-head)" stroke="#0e3a0e" stroke-width="0.9"/>
+                <ellipse cx="34" cy="34" rx="11" ry="12" fill="url(#lz-eye)"/>
+                <ellipse cx="37" cy="36" rx="3.4" ry="6.5" fill="#000"/>
+                <circle  cx="38.5" cy="32" r="2"  fill="#ffffff"/>
+                <ellipse id="lz-lid-l" cx="34" cy="34" rx="12" ry="13"
+                         fill="#3a8a25" stroke="#0e3a0e" stroke-width="0.7"/>
+
+                <!-- Right eye (back, slightly higher and bigger) -->
+                <ellipse cx="68" cy="26" rx="16" ry="17" fill="url(#lz-head)" stroke="#0e3a0e" stroke-width="0.9"/>
+                <ellipse cx="70" cy="28" rx="12" ry="13" fill="url(#lz-eye)"/>
+                <ellipse cx="73" cy="30" rx="3.6" ry="7" fill="#000"/>
+                <circle  cx="74.5" cy="26" r="2.2" fill="#ffffff"/>
+                <ellipse id="lz-lid-r" cx="70" cy="28" rx="13" ry="14"
+                         fill="#3a8a25" stroke="#0e3a0e" stroke-width="0.7"/>
 
                 <!-- Nostril -->
-                <ellipse cx="194" cy="84" rx="1.4" ry="1" fill="#0e3a0e"/>
-
-                <!-- Crest spikes along back -->
-                <path d="M 75,62 l 4,-7 l 4,7 M 95,57 l 4,-7 l 4,7 M 115,55 l 4,-8 l 4,8 M 135,58 l 4,-7 l 4,7"
-                      fill="#0e3a0e" opacity="0.85"/>
+                <circle cx="14" cy="58" r="1.4" fill="#0e3a0e"/>
               </svg>
             </div>
         `;
@@ -1673,32 +1718,39 @@ def render_lenny_lizard():
                 animation: lenny-idle 4.2s ease-in-out infinite;
                 will-change: transform;
             }
-            /* Tail wag */
+            /* Tail wag — pivot at the tail/body joint (175,118) */
             #lz-tail-grp {
-                transform-origin: 55px 78px;
-                transform-box: fill-box;
+                transform-origin: 175px 118px;
+                transform-box: view-box;
                 animation: lz-tail 1.6s ease-in-out infinite;
             }
             @keyframes lz-tail {
-                0%, 100% { transform: rotate(-12deg); }
-                50%      { transform: rotate(14deg);  }
+                0%, 100% { transform: rotate(-10deg); }
+                50%      { transform: rotate(12deg);  }
             }
-            /* Tongue flicks every few seconds */
+            /* Tongue flicks down out of the smile every few seconds */
             #lz-tongue-path {
-                transform-origin: 192px 91px;
-                transform-box: fill-box;
-                animation: lz-tongue 3.8s ease-in-out infinite;
+                transform-origin: 55px 84px;
+                transform-box: view-box;
+                transform: scaleY(0);
+                animation: lz-tongue 4.2s ease-in-out infinite;
             }
             @keyframes lz-tongue {
-                0%, 78%, 100% { opacity: 0; transform: scaleX(0.4); }
-                82%           { opacity: 1; transform: scaleX(1); }
-                90%           { opacity: 1; transform: scaleX(0.85); }
-                95%           { opacity: 0; transform: scaleX(0.5); }
+                0%, 78%, 100% { opacity: 0; transform: scaleY(0); }
+                82%           { opacity: 1; transform: scaleY(1); }
+                90%           { opacity: 1; transform: scaleY(0.9); }
+                95%           { opacity: 0; transform: scaleY(0.4); }
             }
-            /* Blink: lid scales open/closed (default = scaleY 0 = open) */
-            #lz-lid {
-                transform-origin: 178px 72px;
-                transform-box: fill-box;
+            /* Blink: both lids scale open/closed (default = scaleY 0 = open) */
+            #lz-lid-l {
+                transform-origin: 34px 34px;
+                transform-box: view-box;
+                transform: scaleY(0);
+                animation: lz-blink 5.2s ease-in-out infinite;
+            }
+            #lz-lid-r {
+                transform-origin: 70px 28px;
+                transform-box: view-box;
                 transform: scaleY(0);
                 animation: lz-blink 5.2s ease-in-out infinite;
             }
