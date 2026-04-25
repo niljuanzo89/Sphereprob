@@ -413,7 +413,22 @@ def generate_sphere_setlist(target_date, sphere_songs_played):
     }
 
 
-def build_bingo_pdf(cards, city):
+def _inject_free_center(song_cards, size):
+    """Take a list of song cards and return a size×size list with a FREE center cell.
+
+    Accepts up to (size*size - 1) song cards; pads with duplicates if short.
+    """
+    needed = size * size - 1
+    songs = list(song_cards)[:needed]
+    # Pad if we somehow didn't get enough cards
+    while len(songs) < needed:
+        songs.append({"song": "—", "cat": "rare"})
+    free_card = {"song": "★ FREE ★", "cat": "setlist", "free": True}
+    center = (size * size) // 2  # 4 for 3×3, 12 for 5×5
+    return songs[:center] + [free_card] + songs[center:]
+
+
+def build_bingo_pdf(cards, city, size=5):
     from reportlab.lib.pagesizes import letter
     from reportlab.lib import colors
     from reportlab.lib.units import inch
@@ -452,33 +467,44 @@ def build_bingo_pdf(cards, city):
         "c", fontSize=11, textColor=colors.HexColor("#aaaacc"), alignment=TA_CENTER,
         fontName="Helvetica", spaceAfter=10)))
 
-    col_w, row_h, hdr_h = 1.26*inch, 0.85*inch, 0.38*inch
+    # Sizing: 5×5 uses tighter cells; 3×3 uses bigger cells
+    if size == 3:
+        col_w, row_h, hdr_h, font_size, leading = 2.1*inch, 1.5*inch, 0.45*inch, 12, 14
+        header_chars = ["P", "H", "I"]
+    else:
+        col_w, row_h, hdr_h, font_size, leading = 1.26*inch, 0.85*inch, 0.38*inch, 7.5, 10
+        header_chars = list("PHISH")
 
     header_row = [Paragraph(ch, ParagraphStyle(
         "h", fontSize=18, textColor=HEADER_FG, alignment=TA_CENTER,
-        fontName="Helvetica-Bold")) for ch in "BINGO"]
+        fontName="Helvetica-Bold")) for ch in header_chars]
+
+    FREE_BG = colors.HexColor("#3a2800")
+    FREE_FG = colors.HexColor("#FFF3B0")
 
     table_data = [header_row]
-    for row_i in range(5):
+    for row_i in range(size):
         row = []
-        for col_i in range(5):
-            card = cards[row_i * 5 + col_i]
+        for col_i in range(size):
+            card = cards[row_i * size + col_i]
+            fg = FREE_FG if card.get("free") else CAT_FG[card["cat"]]
             row.append(Paragraph(card["song"], ParagraphStyle(
-                f"cell", fontSize=7.5, textColor=CAT_FG[card["cat"]],
-                alignment=TA_CENTER, fontName="Helvetica-Bold", leading=10)))
+                f"cell", fontSize=font_size, textColor=fg,
+                alignment=TA_CENTER, fontName="Helvetica-Bold", leading=leading)))
         table_data.append(row)
 
-    tbl = Table(table_data, colWidths=[col_w]*5, rowHeights=[hdr_h]+[row_h]*5)
+    tbl = Table(table_data, colWidths=[col_w]*size, rowHeights=[hdr_h]+[row_h]*size)
     ts = [
-        ("BACKGROUND", (0, 0), (4, 0), HEADER_BG),
+        ("BACKGROUND", (0, 0), (size-1, 0), HEADER_BG),
         ("GRID",       (0, 0), (-1, -1), 1.5, BORDER),
         ("VALIGN",     (0, 0), (-1, -1), "MIDDLE"),
         ("ALIGN",      (0, 0), (-1, -1), "CENTER"),
     ]
-    for row_i in range(5):
-        for col_i in range(5):
-            ts.append(("BACKGROUND", (col_i, row_i+1), (col_i, row_i+1),
-                        CAT_BG[cards[row_i*5+col_i]["cat"]]))
+    for row_i in range(size):
+        for col_i in range(size):
+            card = cards[row_i*size + col_i]
+            bg = FREE_BG if card.get("free") else CAT_BG[card["cat"]]
+            ts.append(("BACKGROUND", (col_i, row_i+1), (col_i, row_i+1), bg))
     tbl.setStyle(TableStyle(ts))
     story.append(tbl)
     story.append(Spacer(1, 0.1*inch))
@@ -1724,43 +1750,57 @@ with tab1:
 
             # Bingo card
             st.subheader("🎲 Bingo Card")
-            st.caption("🟡 From predicted setlist · 🔵 Globally common · 🟣 Rare / uncommon")
+            st.caption("🟡 From predicted setlist · 🔵 Globally common · 🟣 Rare / uncommon · ★ FREE center")
+            bsize_label = st.radio(
+                "Card size", ["5×5 Classic", "3×3 Quick"],
+                horizontal=True, key=f"bingo_size_{city}",
+            )
+            bsize = 3 if bsize_label.startswith("3") else 5
+
             if st.button("Generate Bingo Card"):
-                cards = generate_bingo(city)
-                if cards:
+                raw = generate_bingo(city)
+                if raw:
+                    cards = _inject_free_center(raw, bsize)
                     st.session_state["bingo_cards"] = cards
                     st.session_state["bingo_city"]  = city
+                    st.session_state["bingo_size"]  = bsize
 
-            if "bingo_cards" in st.session_state and st.session_state.get("bingo_city") == city:
+            if ("bingo_cards" in st.session_state
+                    and st.session_state.get("bingo_city") == city
+                    and st.session_state.get("bingo_size") == bsize):
                 cards = st.session_state["bingo_cards"]
                 cat_styles = {
-                    "setlist": ("background:#2a2a10;color:#F0E68C;border:1px solid #555522", "🟡"),
-                    "common":  ("background:#0d2235;color:#7ec8e3;border:1px solid #1a4a66", "🔵"),
-                    "rare":    ("background:#2a0d35;color:#ce93d8;border:1px solid #5a2a6a", "🟣"),
+                    "setlist": "background:#2a2a10;color:#F0E68C;border:1px solid #555522",
+                    "common":  "background:#0d2235;color:#7ec8e3;border:1px solid #1a4a66",
+                    "rare":    "background:#2a0d35;color:#ce93d8;border:1px solid #5a2a6a",
                 }
-                cell_style = "padding:8px 4px;text-align:center;font-size:12px;font-weight:bold;border-radius:6px;min-height:60px;display:flex;align-items:center;justify-content:center;word-break:break-word;"
+                free_style = ("background:linear-gradient(135deg,#5a3d00,#3a2800);color:#FFF3B0;"
+                              "border:1.5px solid #FFD54F;font-family:'Shrikhand',cursive")
+                cell_style = ("padding:8px 4px;text-align:center;font-size:12px;font-weight:bold;"
+                              "border-radius:6px;min-height:60px;display:flex;align-items:center;"
+                              "justify-content:center;word-break:break-word;")
 
-                col_labels = ["B", "I", "N", "G", "O"]
-                header_cols_b = st.columns(5)
+                col_labels = ["P", "H", "I"] if bsize == 3 else ["P", "H", "I", "S", "H"]
+                header_cols_b = st.columns(bsize)
                 for col, label in zip(header_cols_b, col_labels):
                     col.markdown(f'<div style="text-align:center;font-size:22px;font-weight:bold;color:#F0E68C">{label}</div>', unsafe_allow_html=True)
 
-                for row_i in range(5):
-                    cols = st.columns(5)
+                for row_i in range(bsize):
+                    cols = st.columns(bsize)
                     for col_i, col in enumerate(cols):
-                        card = cards[row_i * 5 + col_i]
-                        bg_style, _ = cat_styles[card["cat"]]
+                        card = cards[row_i * bsize + col_i]
+                        style = free_style if card.get("free") else cat_styles[card["cat"]]
                         col.markdown(
-                            f'<div style="{bg_style};{cell_style}">{card["song"]}</div>',
+                            f'<div style="{style};{cell_style}">{card["song"]}</div>',
                             unsafe_allow_html=True
                         )
 
                 st.markdown("")
-                pdf_buf = build_bingo_pdf(cards, city)
+                pdf_buf = build_bingo_pdf(cards, city, size=bsize)
                 st.download_button(
                     label="🖨️ Download Printable PDF",
                     data=pdf_buf,
-                    file_name=f"{city.replace(' ', '_')}_Bingo.pdf",
+                    file_name=f"{city.replace(' ', '_')}_Bingo_{bsize}x{bsize}.pdf",
                     mime="application/pdf",
                 )
 
@@ -2010,7 +2050,7 @@ with tab2:
                           "display:flex;align-items:center;justify-content:center;word-break:break-word;")
 
         bcol_h = st.columns(5)
-        for col, label in zip(bcol_h, ["B", "I", "N", "G", "O"]):
+        for col, label in zip(bcol_h, ["P", "H", "I", "S", "H"]):
             col.markdown(
                 f'<div style="text-align:center;font-size:26px;font-weight:700;'
                 f'color:#FFF3B0;letter-spacing:0.05em;font-family:Shrikhand,cursive">{label}</div>',
@@ -2285,8 +2325,13 @@ with tab3:
             # ── Sphere Bingo ───────────────────────────────────────
             st.divider()
             st.markdown("#### 🎲 Sphere Bingo Card")
-            st.caption(f"Generate a 5×5 bingo card based on the prediction for {pretty_date} · "
-                       "🟡 top picks · 🔵 globally common · 🟣 rare / uncommon")
+            st.caption(f"Bingo card based on the prediction for {pretty_date} · "
+                       "🟡 top picks · 🔵 globally common · 🟣 rare / uncommon · ★ FREE center")
+            sphere_bsize_label = st.radio(
+                "Card size", ["5×5 Classic", "3×3 Quick"],
+                horizontal=True, key="sphere_bingo_size",
+            )
+            sphere_bsize = 3 if sphere_bsize_label.startswith("3") else 5
 
             if st.button("🎲 Generate Sphere Bingo", key="gen_sphere_bingo"):
                 global_counter_b, global_shows_b, _, current_gap_b, total_shows_b, _ = load_data()
@@ -2325,43 +2370,50 @@ with tab3:
                 bingo_cards = [{"song": s,
                                 "cat": "setlist" if s in st_set else "common" if s in cm_set else "rare"}
                                for s in all_bingo]
+                bingo_cards = _inject_free_center(bingo_cards, sphere_bsize)
                 st.session_state["sphere_bingo"] = bingo_cards
                 st.session_state["sphere_bingo_date"] = target_date
+                st.session_state["sphere_bingo_size"] = sphere_bsize
 
             if (st.session_state.get("sphere_bingo")
-                    and st.session_state.get("sphere_bingo_date") == target_date):
+                    and st.session_state.get("sphere_bingo_date") == target_date
+                    and st.session_state.get("sphere_bingo_size") == sphere_bsize):
                 bcards = st.session_state["sphere_bingo"]
                 cat_styles = {
                     "setlist": "background:#3a3a10;color:#FFF3B0;border:1px solid #5a5a22",
                     "common":  "background:#0d2a45;color:#8fd8f0;border:1px solid #1f5280",
                     "rare":    "background:#35104a;color:#d4a8e0;border:1px solid #6a3588",
                 }
+                free_style = ("background:linear-gradient(135deg,#5a3d00,#3a2800);color:#FFF3B0;"
+                              "border:1.5px solid #FFD54F;font-family:'Shrikhand',cursive")
                 cell_style = ("padding:10px 6px;text-align:center;font-size:12px;"
                               "font-weight:600;border-radius:8px;min-height:68px;"
                               "display:flex;align-items:center;justify-content:center;word-break:break-word;")
 
-                bcol_headers = st.columns(5)
-                for col, label in zip(bcol_headers, ["B", "I", "N", "G", "O"]):
+                bcol_labels = ["P", "H", "I"] if sphere_bsize == 3 else ["P", "H", "I", "S", "H"]
+                bcol_headers = st.columns(sphere_bsize)
+                for col, label in zip(bcol_headers, bcol_labels):
                     col.markdown(
                         f'<div style="text-align:center;font-size:26px;font-weight:700;'
-                        f'color:#FFF3B0;letter-spacing:0.05em">{label}</div>',
+                        f'color:#FFF3B0;letter-spacing:0.05em;font-family:Shrikhand,cursive">{label}</div>',
                         unsafe_allow_html=True
                     )
-                for row_i in range(5):
-                    cols = st.columns(5)
+                for row_i in range(sphere_bsize):
+                    cols = st.columns(sphere_bsize)
                     for col_i, col in enumerate(cols):
-                        card = bcards[row_i * 5 + col_i]
+                        card = bcards[row_i * sphere_bsize + col_i]
+                        style = free_style if card.get("free") else cat_styles[card["cat"]]
                         col.markdown(
-                            f'<div style="{cat_styles[card["cat"]]};{cell_style}">{card["song"]}</div>',
+                            f'<div style="{style};{cell_style}">{card["song"]}</div>',
                             unsafe_allow_html=True
                         )
 
-                pdf_buf = build_bingo_pdf(bcards, f"Sphere {pretty_date}")
+                pdf_buf = build_bingo_pdf(bcards, f"Sphere {pretty_date}", size=sphere_bsize)
                 st.markdown("")
                 st.download_button(
                     label="⬇️ Download Printable Bingo PDF",
                     data=pdf_buf,
-                    file_name=f"Sphere_{target_date}_Bingo.pdf",
+                    file_name=f"Sphere_{target_date}_Bingo_{sphere_bsize}x{sphere_bsize}.pdf",
                     mime="application/pdf",
                     key="dl_sphere_bingo_pdf",
                 )
