@@ -1774,7 +1774,8 @@ def render_lenny_lizard():
             #lenny-char:hover {
                 transform: scale(1.14) rotateY(-18deg) rotateX(6deg);
             }
-            #lenny-char.jump { animation: lenny-jump 1.05s cubic-bezier(.25,.9,.35,1.1); }
+            #lenny-char.jump  { animation: lenny-jump 1.05s cubic-bezier(.25,.9,.35,1.1); }
+            #lenny-char.dance { animation: lenny-dance 2.4s ease-in-out 2; }
             @keyframes lenny-idle {
                 0%   { transform: translateY(0)    rotateY(0deg)    rotateX(0deg)   rotateZ(0deg); }
                 20%  { transform: translateY(-3px) rotateY(20deg)   rotateX(-2deg)  rotateZ(2deg); }
@@ -1792,6 +1793,18 @@ def render_lenny_lizard():
                 50%  { transform: translateY(-110px) rotateY(360deg) rotateZ(540deg) scale(1.18); }
                 80%  { transform: translateY(-25px) rotateY(540deg) rotateZ(900deg) scale(1.06); }
                 100% { transform: translateY(0)     rotateY(720deg) rotateZ(1080deg) scale(1); }
+            }
+            /* Boogie! Triggered on tab change, runs for ~5s (2 loops × 2.4s).
+               Bounces, sways side to side, hip-twists, head-nods. */
+            @keyframes lenny-dance {
+                0%   { transform: translate( 0px, 0)     rotateY(0)    rotateZ(0)    scale(1); }
+                10%  { transform: translate(-8px, -14px) rotateY(-22deg) rotateZ(-6deg) scale(1.05); }
+                25%  { transform: translate(-14px, 0)    rotateY(-30deg) rotateZ(2deg)  scale(1); }
+                40%  { transform: translate(-6px, -18px) rotateY(0deg)   rotateZ(8deg)  scale(1.08); }
+                55%  { transform: translate( 6px, 0)     rotateY(30deg)  rotateZ(2deg)  scale(1); }
+                70%  { transform: translate(14px, -14px) rotateY(22deg)  rotateZ(-6deg) scale(1.05); }
+                85%  { transform: translate( 6px, 0)     rotateY(0)      rotateZ(0)    scale(1); }
+                100% { transform: translate( 0px, 0)     rotateY(0)      rotateZ(0)    scale(1); }
             }
             #lenny-bubble {
                 pointer-events: auto;
@@ -1868,6 +1881,33 @@ def render_lenny_lizard():
             e.stopPropagation();
             hideBubble();
         });
+
+        // ── Dance on tab change ──
+        function dance() {
+            charEl.classList.remove('dance', 'jump');
+            void charEl.offsetWidth;          // re-trigger animation
+            charEl.classList.add('dance');
+            setTimeout(() => charEl.classList.remove('dance'), 5200);
+        }
+        function hookTabsForDance() {
+            const tabs = doc.querySelectorAll('.stTabs [data-baseweb="tab"]');
+            if (tabs.length === 0) return false;
+            tabs.forEach(t => {
+                if (t.__lennyHooked) return;
+                t.__lennyHooked = true;
+                t.addEventListener('click', () => {
+                    if (t.getAttribute('aria-selected') === 'true') return;
+                    dance();
+                });
+            });
+            return true;
+        }
+        if (!hookTabsForDance()) {
+            const obs = new MutationObserver(() => {
+                if (hookTabsForDance()) obs.disconnect();
+            });
+            obs.observe(doc.body, { childList: true, subtree: true });
+        }
 
         // Greet on first load after a short pause
         setTimeout(() => showTip(0), 1500);
