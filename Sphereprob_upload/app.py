@@ -1565,32 +1565,68 @@ def render_lenny_lizard():
         const css = doc.createElement('style');
         css.textContent = `
             #lenny-wrap {
-                position: fixed; right: 20px; bottom: 20px;
+                position: fixed; right: 90px; bottom: 90px;
                 z-index: 99999; display: flex; align-items: flex-end; gap: 10px;
                 pointer-events: none;
+                perspective: 600px;
             }
             #lenny-char {
+                position: relative;
                 pointer-events: auto;
-                font-size: 56px; line-height: 1;
+                font-size: 64px; line-height: 1;
                 cursor: pointer; user-select: none;
-                filter: drop-shadow(0 4px 10px rgba(0,0,0,0.55))
-                        drop-shadow(0 0 8px rgba(143,216,240,0.35));
+                /* Layered shadows give a sense of depth & contact w/ ground */
+                filter:
+                    drop-shadow(0 1px 0 rgba(255,255,255,0.35))
+                    drop-shadow(0 6px 4px rgba(0,0,0,0.45))
+                    drop-shadow(0 14px 10px rgba(0,0,0,0.35))
+                    drop-shadow(0 0 12px rgba(143,216,240,0.4));
+                /* text-shadow adds an inner highlight + rim for 3D pop */
+                text-shadow:
+                    0 1px 0 rgba(255,255,255,0.6),
+                    0 -1px 0 rgba(0,0,0,0.4),
+                    1px 0 0 rgba(0,0,0,0.25),
+                    -1px 0 0 rgba(255,255,255,0.25);
+                transform-style: preserve-3d;
+                transform-origin: 50% 92%;
                 transition: transform 0.18s ease;
-                animation: lenny-idle 3.4s ease-in-out infinite;
-                transform-origin: 50% 90%;
+                animation: lenny-idle 4.2s ease-in-out infinite;
+                will-change: transform;
             }
-            #lenny-char:hover { transform: scale(1.12) rotate(-6deg); }
-            #lenny-char.jump  { animation: lenny-jump 0.8s ease-in-out; }
+            #lenny-char::after {
+                /* Soft elliptical ground shadow that pulses with the bob */
+                content: '';
+                position: absolute;
+                left: 50%; bottom: -10px;
+                width: 56px; height: 10px;
+                transform: translateX(-50%);
+                background: radial-gradient(ellipse at center,
+                            rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 70%);
+                border-radius: 50%;
+                animation: lenny-shadow 4.2s ease-in-out infinite;
+                pointer-events: none;
+            }
+            #lenny-char:hover {
+                transform: scale(1.14) rotateY(-18deg) rotateX(6deg);
+            }
+            #lenny-char.jump { animation: lenny-jump 1.05s cubic-bezier(.25,.9,.35,1.1); }
             @keyframes lenny-idle {
-                0%, 100% { transform: translateY(0)    rotate(0); }
-                50%      { transform: translateY(-6px) rotate(3deg); }
+                0%   { transform: translateY(0)    rotateY(0deg)    rotateX(0deg)   rotateZ(0deg); }
+                20%  { transform: translateY(-3px) rotateY(20deg)   rotateX(-2deg)  rotateZ(2deg); }
+                50%  { transform: translateY(-8px) rotateY(0deg)    rotateX(-4deg)  rotateZ(0deg); }
+                80%  { transform: translateY(-3px) rotateY(-20deg)  rotateX(-2deg)  rotateZ(-2deg); }
+                100% { transform: translateY(0)    rotateY(0deg)    rotateX(0deg)   rotateZ(0deg); }
+            }
+            @keyframes lenny-shadow {
+                0%, 100% { opacity: 0.65; transform: translateX(-50%) scale(1); }
+                50%      { opacity: 0.35; transform: translateX(-50%) scale(0.7); }
             }
             @keyframes lenny-jump {
-                0%   { transform: translateY(0)     rotate(0)    scale(1); }
-                25%  { transform: translateY(-55px) rotate(180deg) scale(1.1); }
-                55%  { transform: translateY(-90px) rotate(540deg) scale(1.15); }
-                80%  { transform: translateY(-20px) rotate(720deg) scale(1.05); }
-                100% { transform: translateY(0)     rotate(720deg) scale(1); }
+                0%   { transform: translateY(0)     rotateY(0)     rotateZ(0)     scale(1); }
+                20%  { transform: translateY(-65px) rotateY(180deg) rotateZ(180deg) scale(1.12); }
+                50%  { transform: translateY(-110px) rotateY(360deg) rotateZ(540deg) scale(1.18); }
+                80%  { transform: translateY(-25px) rotateY(540deg) rotateZ(900deg) scale(1.06); }
+                100% { transform: translateY(0)     rotateY(720deg) rotateZ(1080deg) scale(1); }
             }
             #lenny-bubble {
                 pointer-events: auto;
