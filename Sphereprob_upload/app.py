@@ -2139,8 +2139,11 @@ def render_easter_eggs():
                       color:#fff; font-family:'Shrikhand',cursive; will-change:transform;
                       animation: ee-zzz 2.6s ease-out forwards;
                       text-shadow:0 0 8px rgba(255,255,255,.6); }
-            .ee-shades { position:absolute; top:8%; left:14%; font-size:34px; pointer-events:none;
-                         filter: drop-shadow(0 2px 1px rgba(0,0,0,.5)); transform:rotate(-4deg); }
+            /* Centered between Lenny's eye centers (~21% × 18% in SVG-fractional coords),
+               and tilted -9° to match the slope of the eye line (right eye sits higher). */
+            .ee-shades { position:absolute; top:18%; left:21%; font-size:42px; pointer-events:none;
+                         filter: drop-shadow(0 2px 1px rgba(0,0,0,.5));
+                         transform: translate(-50%, -50%) rotate(-9deg); }
             #ee-debug { position:fixed; top:60px; right:20px; z-index:99999;
                         background:rgba(20,20,36,0.96); color:#8fd8f0;
                         padding:14px 18px; border-radius:10px;
