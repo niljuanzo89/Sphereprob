@@ -2164,6 +2164,37 @@ def render_easter_eggs():
                       padding:8px 18px; border-radius:22px; border:1px solid #FFD54F;
                       font-family:'Shrikhand',cursive; font-size:14px;
                       box-shadow:0 6px 20px rgba(0,0,0,.45); }
+            /* Shoe flies at the camera */
+            @keyframes ee-shoe-fly {
+                0%   { transform: translate(-50%,-50%) translate(40vw, -45vh) scale(0.05) rotate(-30deg); opacity: 0; }
+                15%  { opacity: 1; }
+                70%  { transform: translate(-50%,-50%) translate(0, 0) scale(7) rotate(720deg); opacity: 1; }
+                85%  { transform: translate(-50%,-50%) translate(0, 0) scale(9) rotate(810deg); opacity: 1; }
+                100% { transform: translate(-50%,-50%) translate(0, 0) scale(11) rotate(900deg); opacity: 0; }
+            }
+            .ee-shoe { position:fixed; left:50%; top:50%; pointer-events:none; z-index:99999;
+                       font-size:60px; will-change: transform;
+                       filter: drop-shadow(0 8px 14px rgba(0,0,0,0.65));
+                       animation: ee-shoe-fly 1.4s cubic-bezier(.55,.05,.85,.5) forwards; }
+            /* Whole-page shake when shoe "hits" */
+            @keyframes ee-shake {
+                0%, 100% { transform: translate(0,0); }
+                10% { transform: translate(-6px, 4px); }
+                20% { transform: translate(7px, -3px); }
+                30% { transform: translate(-5px, -5px); }
+                40% { transform: translate(8px, 2px); }
+                50% { transform: translate(-4px, 6px); }
+                60% { transform: translate(5px, -4px); }
+                70% { transform: translate(-7px, 3px); }
+                80% { transform: translate(4px, 4px); }
+                90% { transform: translate(-3px, -2px); }
+            }
+            .ee-shaking { animation: ee-shake 0.55s cubic-bezier(.36,.07,.19,.97); }
+            /* Crack overlay flash on impact */
+            @keyframes ee-crack { 0%{opacity:0} 12%{opacity:1} 100%{opacity:0} }
+            .ee-crack { position:fixed; inset:0; pointer-events:none; z-index:99998;
+                        background: radial-gradient(ellipse at 50% 50%, rgba(255,255,255,.25) 0%, transparent 35%);
+                        animation: ee-crack 0.6s ease-out forwards; }
             @keyframes ee-donut-roll { from{transform:rotate(0)} to{transform:rotate(360deg)} }
             .ee-donut-fall { position:fixed; pointer-events:none; z-index:99970;
                              font-size:48px; animation: ee-donut-roll 1s linear infinite,
@@ -2266,6 +2297,25 @@ def render_easter_eggs():
             },
             divided: () => {
                 spawnBanner('DIVIDED SKY ☁️', '40%', '28px');
+            },
+            cavern: () => {
+                // 👟 "whatever you do, take care of your shoes" — shoe flies at the screen
+                const shoe = doc.createElement('div');
+                shoe.className = 'ee-shoe';
+                shoe.textContent = '👟';
+                doc.body.appendChild(shoe);
+                // After ~1s, the shoe "hits": shake the page + flash + remove
+                setTimeout(() => {
+                    const flash = doc.createElement('div');
+                    flash.className = 'ee-crack';
+                    doc.body.appendChild(flash);
+                    setTimeout(() => flash.remove(), 600);
+                    const root = doc.querySelector('.stApp') || doc.body;
+                    root.classList.add('ee-shaking');
+                    setTimeout(() => root.classList.remove('ee-shaking'), 600);
+                }, 980);
+                setTimeout(() => shoe.remove(), 1500);
+                setTimeout(() => spawnBanner('whatever you do, take care of your shoes', '14%', '20px'), 1100);
             }
         };
         let keybuf = '';
@@ -2362,7 +2412,7 @@ def render_easter_eggs():
                             'Active tab: ' + (sel ? sel.textContent : '?') + '<br>' +
                             'Lenny: ' + (doc.getElementById('lenny-char') ? '🟢 alive' : '🔴 missing') + '<br>' +
                             'Date: ' + new Date().toISOString().slice(0,10) + '<br>' +
-                            'Phrase triggers: <b>yem · wilson · gamehendge · meatstick · fuego · tweezer · divided</b><br>' +
+                            'Phrase triggers: <b>yem · wilson · gamehendge · meatstick · fuego · tweezer · divided · cavern</b><br>' +
                             'URL params: <code>?donut=1</code> turns Lenny into a donut<br>' +
                             '<span style="color:#888">triple-click footer to close</span>';
                         doc.body.appendChild(dbg);
