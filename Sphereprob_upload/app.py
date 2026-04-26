@@ -423,7 +423,9 @@ def _inject_free_center(song_cards, size):
     # Pad if we somehow didn't get enough cards
     while len(songs) < needed:
         songs.append({"song": "—", "cat": "rare"})
-    free_card = {"song": "★ FREE ★", "cat": "setlist", "free": True}
+    # 🥚 1-in-100 easter egg: FREE square swaps to FUEGO
+    free_label = "🔥 FUEGO 🔥" if random.random() < 0.01 else "★ FREE ★"
+    free_card = {"song": free_label, "cat": "setlist", "free": True}
     center = (size * size) // 2  # 4 for 3×3, 12 for 5×5
     return songs[:center] + [free_card] + songs[center:]
 
@@ -2082,6 +2084,402 @@ def render_lenny_lizard():
 
 render_lenny_lizard()
 
+
+# ─────────────────────────────────────────────────────────────
+# 🥚 EASTER EGGS — Konami codes, click counters, date triggers,
+#                  Lenny variants, hidden routes, Possum cameo
+# ─────────────────────────────────────────────────────────────
+def render_easter_eggs():
+    import streamlit.components.v1 as _components
+    _components.html(r"""
+    <script>
+    (function() {
+        const doc = window.parent.document;
+        if (doc.__eeInit) return;
+        doc.__eeInit = true;
+
+        // ─── styles ───
+        const css = doc.createElement('style');
+        css.textContent = `
+            @keyframes ee-fw   { 0%{transform:translate(0,0) scale(.3);opacity:1} 100%{transform:translate(var(--dx),var(--dy)) scale(1);opacity:0} }
+            .ee-firework { position:fixed; width:9px; height:9px; border-radius:50%; pointer-events:none; z-index:99980;
+                           animation: ee-fw 1.3s ease-out forwards; }
+            @keyframes ee-pop  { 0%{transform:translate(-50%,-50%) scale(0) rotate(-12deg);opacity:0}
+                                 25%{transform:translate(-50%,-50%) scale(1.18) rotate(0);opacity:1}
+                                 80%{transform:translate(-50%,-50%) scale(1) rotate(0);opacity:1}
+                                 100%{transform:translate(-50%,-50%) scale(0.65) rotate(8deg);opacity:0} }
+            .ee-banner { position:fixed; pointer-events:none; z-index:99998;
+                         background:linear-gradient(135deg,#FFE98A,#FFA500); color:#3a2800;
+                         font-family:'Shrikhand',cursive; font-size:34px; padding:14px 26px;
+                         border-radius:18px; border:3px solid #FFD54F;
+                         box-shadow:0 8px 30px rgba(0,0,0,0.5);
+                         animation: ee-pop 2.2s ease-out forwards;
+                         text-shadow:0 2px 0 rgba(0,0,0,0.2); white-space:nowrap; }
+            @keyframes ee-meat-cross { from{transform:translateX(-120px)} to{transform:translateX(calc(100vw + 120px))} }
+            @keyframes ee-meat-bob   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-26px)} }
+            .ee-meat-strip { position:fixed; bottom:25%; left:0; pointer-events:none; z-index:99970;
+                             font-size:54px; display:flex; gap:6px; will-change:transform;
+                             animation: ee-meat-cross 5.8s linear forwards; }
+            .ee-meat-strip span { display:inline-block; animation: ee-meat-bob .55s ease-in-out infinite; }
+            .ee-gh { position:fixed; inset:0; z-index:99990; pointer-events:none; opacity:0;
+                     background: radial-gradient(ellipse at center, rgba(80,40,0,.86), rgba(20,10,0,.98));
+                     color:#FFE98A; font-family:'Shrikhand',cursive; font-size:48px;
+                     display:flex; align-items:center; justify-content:center;
+                     text-align:center; line-height:1.15;
+                     transition: opacity .6s ease;
+                     text-shadow:0 0 22px #FFA500, 0 0 6px #ff5500; }
+            .ee-gh.show { opacity:1; }
+            @keyframes ee-possum-walk { from{transform:translateX(-90px)} to{transform:translateX(calc(100vw + 90px))} }
+            .ee-possum { position:fixed; bottom:6px; left:0; pointer-events:none; z-index:99970;
+                         font-size:42px; animation: ee-possum-walk 14s linear forwards;
+                         filter: drop-shadow(0 4px 4px rgba(0,0,0,.5)); }
+            @keyframes ee-zzz { from{transform:translateY(0) rotate(0); opacity:1}
+                                to  {transform:translateY(-90px) rotate(22deg); opacity:0} }
+            .ee-zzz { position:fixed; pointer-events:none; z-index:99999; font-size:30px;
+                      color:#fff; font-family:'Shrikhand',cursive; will-change:transform;
+                      animation: ee-zzz 2.6s ease-out forwards;
+                      text-shadow:0 0 8px rgba(255,255,255,.6); }
+            .ee-shades { position:absolute; top:8%; left:14%; font-size:34px; pointer-events:none;
+                         filter: drop-shadow(0 2px 1px rgba(0,0,0,.5)); transform:rotate(-4deg); }
+            #ee-debug { position:fixed; top:60px; right:20px; z-index:99999;
+                        background:rgba(20,20,36,0.96); color:#8fd8f0;
+                        padding:14px 18px; border-radius:10px;
+                        border:1px solid rgba(255,255,255,0.15);
+                        font-family:monospace; font-size:11px;
+                        max-width:340px; line-height:1.55;
+                        box-shadow:0 8px 28px rgba(0,0,0,.55); }
+            @keyframes ee-spin { to { transform: rotate(720deg); } }
+            .ee-spinning { animation: ee-spin 1.8s cubic-bezier(.3,.9,.3,1) !important;
+                           display:inline-block; transform-origin:50% 50%; }
+            @keyframes ee-confetti { to { transform: translateY(105vh) rotate(720deg); } }
+            .ee-confetti { position:fixed; top:-20px; width:8px; height:14px;
+                           pointer-events:none; z-index:99970;
+                           animation: ee-confetti 3.2s linear forwards; }
+            .ee-halloween-tint { position:fixed; inset:0; pointer-events:none; z-index:1;
+                                 background: radial-gradient(circle at 70% 30%, rgba(255,80,0,0.10), transparent 55%),
+                                             radial-gradient(circle at 20% 80%, rgba(120,0,180,0.08), transparent 55%);
+                                 mix-blend-mode: screen; }
+            #ee-nye { position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:99999;
+                      background:linear-gradient(135deg,#2a2a4a,#1a1a2e); color:#FFE98A;
+                      padding:8px 18px; border-radius:22px; border:1px solid #FFD54F;
+                      font-family:'Shrikhand',cursive; font-size:14px;
+                      box-shadow:0 6px 20px rgba(0,0,0,.45); }
+            @keyframes ee-donut-roll { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+            .ee-donut-fall { position:fixed; pointer-events:none; z-index:99970;
+                             font-size:48px; animation: ee-donut-roll 1s linear infinite,
+                             ee-fall 4s linear forwards; }
+            @keyframes ee-fall { to { transform: translateY(110vh) rotate(720deg); } }
+        `;
+        doc.head.appendChild(css);
+
+        // ─── helpers ───
+        function spawnBanner(text, top, fontSize) {
+            const b = doc.createElement('div');
+            b.className = 'ee-banner';
+            b.textContent = text;
+            b.style.left = '50%';
+            b.style.top  = (top || '40%');
+            if (fontSize) b.style.fontSize = fontSize;
+            doc.body.appendChild(b);
+            setTimeout(() => b.remove(), 2300);
+        }
+
+        function fireworks(cx, cy, count) {
+            const colors = ['#FFD54F','#ff5fa2','#8fd8f0','#90EE90','#ce93d8','#ff8a65'];
+            const N = count || 24;
+            for (let i = 0; i < N; i++) {
+                const p = doc.createElement('div');
+                p.className = 'ee-firework';
+                const a = (i / N) * 2 * Math.PI + Math.random()*0.2;
+                const r = 70 + Math.random() * 90;
+                p.style.left = cx + 'px';
+                p.style.top  = cy + 'px';
+                p.style.background = colors[i % colors.length];
+                p.style.setProperty('--dx', Math.cos(a) * r + 'px');
+                p.style.setProperty('--dy', Math.sin(a) * r + 'px');
+                doc.body.appendChild(p);
+                setTimeout(() => p.remove(), 1400);
+            }
+        }
+
+        // ─── Konami / phrase triggers ───
+        const TRIGGERS = {
+            yem: () => {
+                for (let i=0; i<5; i++) setTimeout(() => {
+                    fireworks(Math.random()*window.innerWidth, 100 + Math.random()*window.innerHeight*0.5);
+                }, i*230);
+                spawnBanner('YOU ENJOY MYSELF!', '38%');
+            },
+            wilson: () => {
+                for (let i=0; i<6; i++) setTimeout(() => {
+                    const w = doc.createElement('div');
+                    w.className = 'ee-banner';
+                    w.textContent = 'WILLL-SONNN!';
+                    w.style.left = (15 + Math.random()*70) + '%';
+                    w.style.top  = (15 + Math.random()*60) + '%';
+                    doc.body.appendChild(w);
+                    setTimeout(() => w.remove(), 2200);
+                }, i*340);
+            },
+            gamehendge: () => {
+                const o = doc.createElement('div');
+                o.className = 'ee-gh';
+                o.innerHTML = '🏰 Welcome to<br>GAMEHENDGE 🐉';
+                doc.body.appendChild(o);
+                requestAnimationFrame(() => o.classList.add('show'));
+                setTimeout(() => { o.classList.remove('show'); setTimeout(()=>o.remove(),700); }, 7000);
+            },
+            meatstick: () => {
+                const strip = doc.createElement('div');
+                strip.className = 'ee-meat-strip';
+                for (let i=0; i<14; i++) {
+                    const s = doc.createElement('span');
+                    s.textContent = '🌭';
+                    s.style.animationDelay = (i*0.07) + 's';
+                    strip.appendChild(s);
+                }
+                doc.body.appendChild(strip);
+                setTimeout(() => strip.remove(), 6300);
+            },
+            fuego: () => {
+                for (let i=0; i<26; i++) setTimeout(() => {
+                    const f = doc.createElement('div');
+                    f.style.cssText = 'position:fixed;pointer-events:none;z-index:99980;font-size:36px';
+                    f.textContent = '🔥';
+                    f.style.left = Math.random()*window.innerWidth + 'px';
+                    f.style.top  = window.innerHeight + 'px';
+                    f.style.transition = 'transform 1.6s ease-out, opacity 1.6s ease-out';
+                    doc.body.appendChild(f);
+                    requestAnimationFrame(() => {
+                        f.style.transform = 'translateY(-' + (60 + Math.random()*window.innerHeight*0.7) + 'px)';
+                        f.style.opacity = '0';
+                    });
+                    setTimeout(() => f.remove(), 1800);
+                }, i*55);
+                spawnBanner('🔥 FUEGO 🔥', '40%');
+            },
+            tweezer: () => {
+                doc.body.style.transition = 'filter 0.8s ease';
+                doc.body.style.filter = 'hue-rotate(180deg) saturate(2)';
+                setTimeout(() => { doc.body.style.filter = ''; }, 2400);
+                spawnBanner('🌀 TWEEZER REPRISE 🌀', '40%');
+            },
+            divided: () => {
+                spawnBanner('DIVIDED SKY ☁️', '40%', '28px');
+            }
+        };
+        let keybuf = '';
+        doc.addEventListener('keydown', (e) => {
+            // Skip when typing into inputs
+            const tgt = e.target;
+            if (tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.isContentEditable)) return;
+            if (!/^[a-zA-Z]$/.test(e.key)) return;
+            keybuf = (keybuf + e.key.toLowerCase()).slice(-24);
+            for (const k in TRIGGERS) {
+                if (keybuf.endsWith(k)) { TRIGGERS[k](); keybuf=''; break; }
+            }
+        });
+
+        // ─── Possum walk-on (1-in-200 page loads) ───
+        if (Math.random() < 1/200) {
+            setTimeout(() => {
+                const p = doc.createElement('div');
+                p.className = 'ee-possum';
+                p.textContent = '🐀';
+                doc.body.appendChild(p);
+                setTimeout(() => p.remove(), 14500);
+            }, 5000 + Math.random()*25000);
+        }
+
+        // ─── Lenny: 60s idle → sleep z's ───
+        let lastTouch = Date.now();
+        ['mousemove','keydown','click','scroll','touchstart'].forEach(ev =>
+            doc.addEventListener(ev, () => lastTouch = Date.now(), { passive:true }));
+        setInterval(() => {
+            if (Date.now() - lastTouch < 60000) return;
+            const lenny = doc.getElementById('lenny-char');
+            if (!lenny) return;
+            const r = lenny.getBoundingClientRect();
+            const z = doc.createElement('div');
+            z.className = 'ee-zzz';
+            z.textContent = ['z','Z','zz'][Math.floor(Math.random()*3)];
+            z.style.left = (r.left + r.width/2 + (Math.random()-0.5)*24) + 'px';
+            z.style.top  = (r.top - 10) + 'px';
+            doc.body.appendChild(z);
+            setTimeout(() => z.remove(), 2700);
+        }, 1700);
+
+        // ─── Lenny: 10× rapid click → sunglasses ───
+        let lennyClicks = []; let shadesOn = false;
+        doc.addEventListener('click', (e) => {
+            const ln = doc.getElementById('lenny-char');
+            if (!ln || !ln.contains(e.target)) return;
+            const now = Date.now();
+            lennyClicks = lennyClicks.filter(t => now - t < 5000);
+            lennyClicks.push(now);
+            if (lennyClicks.length >= 10 && !shadesOn) {
+                shadesOn = true;
+                const shades = doc.createElement('div');
+                shades.className = 'ee-shades';
+                shades.textContent = '🕶️';
+                ln.appendChild(shades);
+            }
+        });
+
+        // ─── Title 5× rapid → spin like a vinyl ───
+        function hookTitleAndFooter() {
+            doc.querySelectorAll('h1').forEach(h => {
+                if (h.__eeHooked) return;
+                h.__eeHooked = true; let tc = [];
+                h.style.cursor = 'pointer';
+                h.addEventListener('click', () => {
+                    const now = Date.now();
+                    tc = tc.filter(t => now - t < 1500);
+                    tc.push(now);
+                    if (tc.length >= 5) {
+                        h.classList.add('ee-spinning');
+                        setTimeout(() => h.classList.remove('ee-spinning'), 1900);
+                        tc = [];
+                    }
+                });
+            });
+            const footer = doc.querySelector('.gj-footer');
+            if (footer && !footer.__eeHooked) {
+                footer.__eeHooked = true; let ft = []; footer.style.cursor = 'pointer';
+                footer.addEventListener('click', () => {
+                    const now = Date.now();
+                    ft = ft.filter(t => now - t < 1000);
+                    ft.push(now);
+                    if (ft.length >= 3) {
+                        let dbg = doc.getElementById('ee-debug');
+                        if (dbg) { dbg.remove(); ft = []; return; }
+                        dbg = doc.createElement('div');
+                        dbg.id = 'ee-debug';
+                        const sel = doc.querySelector('.stTabs [aria-selected="true"]');
+                        dbg.innerHTML =
+                            '<b style="color:#FFE98A">🐛 GJ DEBUG</b><br>' +
+                            'Viewport: ' + innerWidth + '×' + innerHeight + '<br>' +
+                            'Active tab: ' + (sel ? sel.textContent : '?') + '<br>' +
+                            'Lenny: ' + (doc.getElementById('lenny-char') ? '🟢 alive' : '🔴 missing') + '<br>' +
+                            'Date: ' + new Date().toISOString().slice(0,10) + '<br>' +
+                            'Phrase triggers: <b>yem · wilson · gamehendge · meatstick · fuego · tweezer · divided</b><br>' +
+                            'URL params: <code>?donut=1</code> turns Lenny into a donut<br>' +
+                            '<span style="color:#888">triple-click footer to close</span>';
+                        doc.body.appendChild(dbg);
+                        ft = [];
+                    }
+                });
+            }
+        }
+        hookTitleAndFooter();
+        new MutationObserver(hookTitleAndFooter).observe(doc.body, { childList:true, subtree:true });
+
+        // ─── Donut emoji hover → falls and rolls ───
+        function hookDonuts() {
+            doc.body.querySelectorAll('h1,h2,h3,h4,p,div,span').forEach(el => {
+                if (el.__eeDonut) return;
+                if (!el.textContent || el.textContent.length > 200) return;
+                if (!el.textContent.includes('🍩')) return;
+                el.__eeDonut = true;
+                let hoverStart = 0;
+                el.addEventListener('mouseenter', () => { hoverStart = Date.now(); });
+                el.addEventListener('mouseleave', () => {
+                    if (Date.now() - hoverStart < 1200) return;
+                    const r = el.getBoundingClientRect();
+                    const d = doc.createElement('div');
+                    d.className = 'ee-donut-fall';
+                    d.textContent = '🍩';
+                    d.style.left = (r.left + r.width/2) + 'px';
+                    d.style.top  = (r.top + r.height/2) + 'px';
+                    doc.body.appendChild(d);
+                    setTimeout(() => d.remove(), 4200);
+                });
+            });
+        }
+        hookDonuts();
+        new MutationObserver(hookDonuts).observe(doc.body, { childList:true, subtree:true });
+
+        // ─── URL param: ?donut=1 → Lenny becomes a donut ───
+        const search = window.parent.location.search || '';
+        if (/donut=1/.test(search)) {
+            const tryDonut = () => {
+                const ln = doc.getElementById('lenny-char');
+                if (!ln) return false;
+                ln.innerHTML = '<div style="font-size:80px;line-height:1;text-shadow:0 4px 6px rgba(0,0,0,.4)">🍩</div>';
+                return true;
+            };
+            if (!tryDonut()) {
+                const obs = new MutationObserver(() => { if (tryDonut()) obs.disconnect(); });
+                obs.observe(doc.body, { childList:true, subtree:true });
+            }
+        }
+
+        // ─── Date-based eggs ───
+        const today = new Date();
+        const m = today.getMonth() + 1, d = today.getDate();
+
+        // Halloween 10/31
+        if (m === 10 && d === 31) {
+            const tint = doc.createElement('div');
+            tint.className = 'ee-halloween-tint';
+            doc.body.appendChild(tint);
+            setTimeout(() => spawnBanner('🎃 Spooky Phish! 👻', '12%', '24px'), 1200);
+        }
+
+        // Trey's birthday 9/30
+        if (m === 9 && d === 30) {
+            const colors = ['#FFD54F','#ff5fa2','#8fd8f0','#90EE90','#ce93d8','#ff8a65'];
+            for (let i=0; i<90; i++) setTimeout(() => {
+                const c = doc.createElement('div');
+                c.className = 'ee-confetti';
+                c.style.left = Math.random()*100 + 'vw';
+                c.style.background = colors[i % colors.length];
+                c.style.animationDuration = (2.6 + Math.random()*2) + 's';
+                doc.body.appendChild(c);
+                setTimeout(() => c.remove(), 5200);
+            }, i*70);
+            setTimeout(() => spawnBanner('🎂 Happy Birthday Trey 🎂', '14%', '26px'), 200);
+        }
+
+        // NYE 12/31 countdown widget
+        if (m === 12 && d === 31) {
+            const cd = doc.createElement('div');
+            cd.id = 'ee-nye';
+            doc.body.appendChild(cd);
+            const tick = () => {
+                const now = new Date();
+                const next = new Date(now.getFullYear()+1, 0, 1, 0, 0, 0);
+                let s = Math.max(0, Math.floor((next - now) / 1000));
+                const h = Math.floor(s/3600); s -= h*3600;
+                const mm = Math.floor(s/60);   s -= mm*60;
+                cd.textContent = '🎆 NYE ' + String(h).padStart(2,'0') + ':' +
+                                 String(mm).padStart(2,'0') + ':' + String(s).padStart(2,'0') + ' 🎆';
+            };
+            tick(); setInterval(tick, 1000);
+        }
+
+        // ─── Antelope counter — counts in localStorage how many predictions a user
+        //     has loaded that contained "Run Like an Antelope". Display via debug panel.
+        try {
+            const KEY = 'gj_antelope_count';
+            const setlists = doc.querySelectorAll('table');
+            let found = false;
+            setlists.forEach(t => {
+                if (t.textContent.includes('Run Like an Antelope')) found = true;
+            });
+            if (found) {
+                let n = parseInt(localStorage.getItem(KEY) || '0', 10);
+                localStorage.setItem(KEY, String(n + 1));
+            }
+        } catch(_) {}
+    })();
+    </script>
+    """, height=0)
+
+
+render_easter_eggs()
+
+
 tab1, tab2, tab3 = st.tabs(["🎸 City Predictor", "🏟️ Top 50 · Sphere 2026", "🔮 Sphere Predictor"])
 
 # ── Glowstick rain on tab change ─────────────────────────────
@@ -2141,7 +2539,10 @@ _components.html(r"""
             s.className = 'gj-glow';
             const color = colors[i % colors.length];
             s.style.color = color;
-            s.textContent = glyphs[i % glyphs.length];
+            // 🥚 1-in-50 easter egg: a random glowstick is replaced by a chess piece
+            s.textContent = (Math.random() < 1/50)
+                ? ['♛','♞','♜','♝','♚','♟'][Math.floor(Math.random()*6)]
+                : glyphs[i % glyphs.length];
             s.style.left = (2 + (i * 96 / N) + (Math.random() * 4 - 2)) + 'vw';
             const dur = 2.2 + Math.random() * 1.8;
             const delay = Math.random() * 0.9;
