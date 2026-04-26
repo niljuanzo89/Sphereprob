@@ -2320,15 +2320,23 @@ def render_easter_eggs():
         };
         let keybuf = '';
         doc.addEventListener('keydown', (e) => {
-            // Skip when typing into inputs
+            // Skip when typing into form inputs — let Streamlit handle those normally
             const tgt = e.target;
             if (tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.isContentEditable)) return;
+            // Ignore modified key combos (Cmd+R, Ctrl+C, etc) — only intercept bare letter keys
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+            // Block Streamlit's single-key shortcuts (C=cache, R=rerun, ?=help, /=search)
+            // by killing the event before Streamlit's listener can see it.
+            if (/^[a-zA-Z?/]$/.test(e.key)) {
+                e.stopImmediatePropagation();
+                e.stopPropagation();
+            }
             if (!/^[a-zA-Z]$/.test(e.key)) return;
             keybuf = (keybuf + e.key.toLowerCase()).slice(-24);
             for (const k in TRIGGERS) {
                 if (keybuf.endsWith(k)) { TRIGGERS[k](); keybuf=''; break; }
             }
-        });
+        }, /* useCapture */ true);
 
         // ─── Possum walk-on (1-in-200 page loads) ───
         if (Math.random() < 1/200) {
