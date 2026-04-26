@@ -414,20 +414,107 @@ def generate_sphere_setlist(target_date, sphere_songs_played):
 
 
 def _inject_free_center(song_cards, size):
-    """Take a list of song cards and return a size×size list with a FREE center cell.
+    """Return a size×size list of bingo cards.
 
-    Accepts up to (size*size - 1) song cards; pads with duplicates if short.
+    - 5×5 → inserts a FREE center square (occasionally swapped to FUEGO 🔥)
+    - 3×3 → no free space; all 9 cells are songs
+    Pads with placeholders if there aren't enough source cards.
     """
+    if size == 3:
+        needed = 9
+        songs = list(song_cards)[:needed]
+        while len(songs) < needed:
+            songs.append({"song": "—", "cat": "rare"})
+        return songs
+
+    # 5×5 (or larger) keeps the free center
     needed = size * size - 1
     songs = list(song_cards)[:needed]
-    # Pad if we somehow didn't get enough cards
     while len(songs) < needed:
         songs.append({"song": "—", "cat": "rare"})
     # 🥚 1-in-100 easter egg: FREE square swaps to FUEGO
     free_label = "🔥 FUEGO 🔥" if random.random() < 0.01 else "★ FREE ★"
     free_card = {"song": free_label, "cat": "setlist", "free": True}
-    center = (size * size) // 2  # 4 for 3×3, 12 for 5×5
+    center = (size * size) // 2  # 12 for 5×5
     return songs[:center] + [free_card] + songs[center:]
+
+
+def make_top50_bingo_cards(top50, sphere_songs_t50, size):
+    """Build bingo cards from the all-time Top 50.
+
+    Marks a card with played=True if it's already been played at the Sphere this run,
+    so the UI can highlight it with a gold overlay.
+    """
+    pool = list(top50)
+    ranks = {s: i + 1 for i, (s, _) in enumerate(pool)}
+    top_tier  = [s for s, _ in pool[:10]]
+    mid_tier  = [s for s, _ in pool[10:25]]
+    deep_tier = [s for s, _ in pool[25:50]]
+    random.shuffle(top_tier); random.shuffle(mid_tier); random.shuffle(deep_tier)
+
+    if size == 3:
+        # 9 cells: 4 top-10 + 3 mid + 2 deep
+        picks = top_tier[:4] + mid_tier[:3] + deep_tier[:2]
+    else:
+        # 24 cells (FREE auto-inserted): 8 top-10 + 9 mid + 7 deep
+        picks = top_tier[:8] + mid_tier[:9] + deep_tier[:7]
+    random.shuffle(picks)
+
+    cards = []
+    for song in picks:
+        rank = ranks.get(song, 99)
+        cat  = "setlist" if rank <= 10 else ("common" if rank <= 25 else "rare")
+        cards.append({
+            "song":   song,
+            "cat":    cat,
+            "played": bool(sphere_songs_t50.get(song)),
+        })
+    return _inject_free_center(cards, size)
+
+
+def make_sphere_bingo_cards(rows, excluded_set, size):
+    """Build bingo cards from a Sphere prediction.
+
+    `rows` = the prediction rows (each with "Song" and "_adj" score),
+    `excluded_set` = songs already played at the Sphere (excluded from prediction).
+    """
+    global_counter_b, global_shows_b, _, current_gap_b, total_shows_b, _ = load_data()
+
+    def gscore(song):
+        g = current_gap_b.get(song, total_shows_b)
+        return (global_counter_b[song] / global_shows_b) * (1 + math.log(g+1) / math.log(total_shows_b+1))
+
+    setlist_picks = [r["Song"] for r in sorted(rows, key=lambda r: r["_adj"], reverse=True)[:10]]
+    used = set(setlist_picks) | set(excluded_set)
+
+    common_pool = sorted(
+        [(s, gscore(s)) for s, c in global_counter_b.items()
+         if 5 <= (c / global_shows_b) * 100 < 15 and s not in used],
+        key=lambda x: x[1], reverse=True
+    )
+    common_picks = [s for s, _ in common_pool[:10]]
+    used |= set(common_picks)
+
+    occasional_pool = sorted(
+        [(s, gscore(s)) for s, c in global_counter_b.items()
+         if 1 <= (c / global_shows_b) * 100 < 5 and s not in used],
+        key=lambda x: x[1], reverse=True
+    )
+    rare_pool = sorted(
+        [(s, gscore(s)) for s, c in global_counter_b.items()
+         if (c / global_shows_b) * 100 < 1 and s not in used],
+        key=lambda x: x[1], reverse=True
+    )
+    rare_picks = [s for s, _ in occasional_pool[:3]] + [s for s, _ in rare_pool[:2]]
+
+    all_bingo = setlist_picks + common_picks + rare_picks
+    random.shuffle(all_bingo)
+    st_set, cm_set = set(setlist_picks), set(common_picks)
+    cards = [{
+        "song": s,
+        "cat": "setlist" if s in st_set else ("common" if s in cm_set else "rare"),
+    } for s in all_bingo]
+    return _inject_free_center(cards, size)
 
 
 def build_bingo_pdf(cards, city, size=5):
@@ -2541,7 +2628,12 @@ def render_easter_eggs():
 render_easter_eggs()
 
 
-tab1, tab2, tab3 = st.tabs(["🎸 City Predictor", "🏟️ Top 50 · Sphere 2026", "🔮 Sphere Predictor"])
+tab1, tab2, tab3, tab4 = st.tabs([
+    "🎸 City Predictor",
+    "🏟️ Top 50 · Sphere 2026",
+    "🔮 Sphere Predictor",
+    "🎲 Bingo",
+])
 
 # ── Glowstick rain on tab change ─────────────────────────────
 # Injected via components.v1.html so the <script> actually runs.
@@ -2770,63 +2862,7 @@ with tab1:
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
-            st.divider()
-
-            # Bingo card
-            st.subheader("🎲 Bingo Card")
-            st.caption("🟡 From predicted setlist · 🔵 Globally common · 🟣 Rare / uncommon · ★ FREE center")
-            bsize_label = st.radio(
-                "Card size", ["5×5 Classic", "3×3 Quick"],
-                horizontal=True, key=f"bingo_size_{city}",
-            )
-            bsize = 3 if bsize_label.startswith("3") else 5
-
-            if st.button("Generate Bingo Card"):
-                raw = generate_bingo(city)
-                if raw:
-                    cards = _inject_free_center(raw, bsize)
-                    st.session_state["bingo_cards"] = cards
-                    st.session_state["bingo_city"]  = city
-                    st.session_state["bingo_size"]  = bsize
-
-            if ("bingo_cards" in st.session_state
-                    and st.session_state.get("bingo_city") == city
-                    and st.session_state.get("bingo_size") == bsize):
-                cards = st.session_state["bingo_cards"]
-                cat_styles = {
-                    "setlist": "background:#2a2a10;color:#F0E68C;border:1px solid #555522",
-                    "common":  "background:#0d2235;color:#7ec8e3;border:1px solid #1a4a66",
-                    "rare":    "background:#2a0d35;color:#ce93d8;border:1px solid #5a2a6a",
-                }
-                free_style = ("background:linear-gradient(135deg,#5a3d00,#3a2800);color:#FFF3B0;"
-                              "border:1.5px solid #FFD54F;font-family:'Shrikhand',cursive")
-                cell_style = ("padding:8px 4px;text-align:center;font-size:12px;font-weight:bold;"
-                              "border-radius:6px;min-height:60px;display:flex;align-items:center;"
-                              "justify-content:center;word-break:break-word;")
-
-                col_labels = ["P", "H", "I"] if bsize == 3 else ["P", "H", "I", "S", "H"]
-                header_cols_b = st.columns(bsize)
-                for col, label in zip(header_cols_b, col_labels):
-                    col.markdown(f'<div style="text-align:center;font-size:22px;font-weight:bold;color:#F0E68C">{label}</div>', unsafe_allow_html=True)
-
-                for row_i in range(bsize):
-                    cols = st.columns(bsize)
-                    for col_i, col in enumerate(cols):
-                        card = cards[row_i * bsize + col_i]
-                        style = free_style if card.get("free") else cat_styles[card["cat"]]
-                        col.markdown(
-                            f'<div style="{style};{cell_style}">{card["song"]}</div>',
-                            unsafe_allow_html=True
-                        )
-
-                st.markdown("")
-                pdf_buf = build_bingo_pdf(cards, city, size=bsize)
-                st.download_button(
-                    label="🖨️ Download Printable PDF",
-                    data=pdf_buf,
-                    file_name=f"{city.replace(' ', '_')}_Bingo_{bsize}x{bsize}.pdf",
-                    mime="application/pdf",
-                )
+            st.info("🎲 Bingo cards have moved to their own tab → **🎲 Bingo**")
 
 
 # ═══════════════════════════════════════════════════════════
@@ -3022,102 +3058,7 @@ with tab2:
         key="dl_top50"
     )
 
-    # ── Top 50 Bingo Card ──────────────────────────────────
-    st.divider()
-    st.markdown("#### 🎲 Top 50 Bingo Card")
-    st.caption("A 5×5 bingo card drawn from the all-time Top 50. "
-               "Tier-coloured by rank · ★ marks songs already played at the Sphere this run.")
-
-    if st.button("🎲 Generate Top 50 Bingo", key="gen_t50_bingo"):
-        # Sample 24 songs (center = FREE) weighted lightly by rank so top songs
-        # appear more often, but ranks 26-50 still get representation.
-        pool = [(s, c) for s, c in top50]
-        ranks = {s: i + 1 for i, (s, _) in enumerate(pool)}
-
-        top_tier  = [s for s, _ in pool[:10]]
-        mid_tier  = [s for s, _ in pool[10:25]]
-        deep_tier = [s for s, _ in pool[25:50]]
-
-        # Pick a balanced spread: 8 top, 9 mid, 7 deep = 24 squares
-        random.shuffle(top_tier); random.shuffle(mid_tier); random.shuffle(deep_tier)
-        picks = top_tier[:8] + mid_tier[:9] + deep_tier[:7]
-        random.shuffle(picks)
-
-        cards = []
-        for i, song in enumerate(picks):
-            rank = ranks.get(song, 99)
-            cat  = "setlist" if rank <= 10 else ("common" if rank <= 25 else "rare")
-            cards.append({"song": song, "cat": cat, "played": bool(sphere_songs_t50.get(song))})
-            if i == 11:  # insert FREE at index 12 (center of 5×5)
-                cards.append({"song": "★ FREE ★", "cat": "setlist", "played": False, "free": True})
-        # Ensure exactly 25 cells (in case of off-by-one when picks list shifts)
-        cards = cards[:25]
-        while len(cards) < 25:
-            cards.append({"song": "★ FREE ★", "cat": "setlist", "played": False, "free": True})
-
-        st.session_state["t50_bingo"] = cards
-
-    if st.session_state.get("t50_bingo"):
-        bcards_t50 = st.session_state["t50_bingo"]
-        cat_styles_t50 = {
-            "setlist": "background:#1B4D1B;color:#90EE90;border:1px solid #2d6b2d",
-            "common":  "background:#4D2E00;color:#FFB347;border:1px solid #6e4910",
-            "rare":    "background:#2E0050;color:#CE93D8;border:1px solid #4d1882",
-        }
-        played_overlay = ("background:linear-gradient(135deg,#3a2800 0%,#5a3d00 100%);"
-                          "color:#FFFACD;border:1.5px solid #FFD54F;"
-                          "box-shadow:0 0 6px rgba(255,213,79,0.35)")
-        free_style = ("background:linear-gradient(135deg,#5a3d00,#3a2800);color:#FFF3B0;"
-                      "border:1.5px solid #FFD54F;font-family:'Shrikhand',cursive")
-        cell_style_t50 = ("padding:10px 6px;text-align:center;font-size:12px;"
-                          "font-weight:600;border-radius:8px;min-height:68px;"
-                          "display:flex;align-items:center;justify-content:center;word-break:break-word;")
-
-        bcol_h = st.columns(5)
-        for col, label in zip(bcol_h, ["P", "H", "I", "S", "H"]):
-            col.markdown(
-                f'<div style="text-align:center;font-size:26px;font-weight:700;'
-                f'color:#FFF3B0;letter-spacing:0.05em;font-family:Shrikhand,cursive">{label}</div>',
-                unsafe_allow_html=True
-            )
-        for row_i in range(5):
-            cols = st.columns(5)
-            for col_i, col in enumerate(cols):
-                card = bcards_t50[row_i * 5 + col_i]
-                if card.get("free"):
-                    style = free_style
-                    label = card["song"]
-                elif card.get("played"):
-                    style = played_overlay
-                    label = "★ " + card["song"]
-                else:
-                    style = cat_styles_t50[card["cat"]]
-                    label = card["song"]
-                col.markdown(
-                    f'<div style="{style};{cell_style_t50}">{label}</div>',
-                    unsafe_allow_html=True
-                )
-
-        st.markdown("""
-        <div style="font-size:11px;color:#888;margin-top:10px">
-        <span style="background:#1B4D1B;color:#90EE90;padding:2px 6px;border-radius:4px">Top 10</span> &nbsp;
-        <span style="background:#4D2E00;color:#FFB347;padding:2px 6px;border-radius:4px">11–25</span> &nbsp;
-        <span style="background:#2E0050;color:#CE93D8;padding:2px 6px;border-radius:4px">26–50</span> &nbsp;
-        <span style="background:#3a2800;color:#FFFACD;padding:2px 6px;border-radius:4px">★ Played at Sphere</span>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # PDF download — strip the extra fields the PDF builder doesn't know about
-        pdf_cards = [{"song": c["song"], "cat": c["cat"]} for c in bcards_t50]
-        pdf_buf_t50 = build_bingo_pdf(pdf_cards, "Top 50 All-Time")
-        st.markdown("")
-        st.download_button(
-            label="⬇️ Download Printable Bingo PDF",
-            data=pdf_buf_t50,
-            file_name="Top_50_Bingo.pdf",
-            mime="application/pdf",
-            key="dl_t50_bingo_pdf",
-        )
+    # Bingo moved to its own dedicated tab — see the 🎲 Bingo tab
 
 
 # ═══════════════════════════════════════════════════════════
@@ -3346,101 +3287,163 @@ with tab3:
                 key="dl_sphere_xlsx",
             )
 
-            # ── Sphere Bingo ───────────────────────────────────────
-            st.divider()
-            st.markdown("#### 🎲 Sphere Bingo Card")
-            st.caption(f"Bingo card based on the prediction for {pretty_date} · "
-                       "🟡 top picks · 🔵 globally common · 🟣 rare / uncommon · ★ FREE center")
-            sphere_bsize_label = st.radio(
-                "Card size", ["5×5 Classic", "3×3 Quick"],
-                horizontal=True, key="sphere_bingo_size",
+            # Bingo cards moved to dedicated 🎲 Bingo tab.
+
+
+# ═══════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════
+# TAB 4 — Bingo (consolidated)
+# ═══════════════════════════════════════════════════════════
+with tab4:
+    st.markdown('<div class="gj-section-head">Phish Bingo</div>', unsafe_allow_html=True)
+    st.markdown('<div class="gj-section-sub">Pick a source and a card size · '
+                '5×5 has a FREE center · 3×3 is all songs · everything is printable</div>',
+                unsafe_allow_html=True)
+
+    # Source selector
+    source_label = st.radio(
+        "🎵 Card source",
+        ["🏟️ Top 50 All-Time", "🎸 City Predictor", "🔮 Sphere Predictor"],
+        horizontal=True, key="bingo_source_pick",
+    )
+    source = ("top50" if source_label.startswith("🏟️")
+              else "city" if source_label.startswith("🎸")
+              else "sphere")
+
+    bsize_label = st.radio(
+        "🎲 Card size",
+        ["5×5 Classic", "3×3 Quick"],
+        horizontal=True, key="bingo_size_pick",
+    )
+    bsize = 3 if bsize_label.startswith("3") else 5
+
+    st.divider()
+
+    # ── Source-specific input ──
+    cards = None
+    title = ""
+    file_stem = "Phish_Bingo"
+
+    if source == "top50":
+        st.caption("Bingo from Phish's all-time Top 50 most-played songs since 2008. "
+                   "Tier-coloured by rank · ★ marks songs already played at the Sphere this run.")
+        with st.spinner("Loading Top 50 data..."):
+            global_counter_b4, global_shows_b4 = build_top50_st()
+            sphere_songs_b4, _ = fetch_sphere_songs_st()
+        top50_b4 = global_counter_b4.most_common(50)
+
+        if st.button("🎲 Generate Top 50 Bingo", key="b4_gen_t50"):
+            cards = make_top50_bingo_cards(top50_b4, sphere_songs_b4, bsize)
+            st.session_state["b4_cards"]  = cards
+            st.session_state["b4_kind"]   = ("top50", bsize)
+            st.session_state["b4_title"]  = "Top 50 All-Time"
+            st.session_state["b4_stem"]   = "Top_50_Bingo"
+
+    elif source == "city":
+        st.caption("Bingo built from a city-specific prediction. "
+                   "🟡 from predicted setlist · 🔵 globally common · 🟣 rare / uncommon.")
+        city_b4 = st.text_input(
+            "City (e.g. Chicago, Burlington, New York)",
+            key="b4_city_input", placeholder="Las Vegas",
+        ).strip()
+
+        if st.button("🎲 Generate City Bingo", key="b4_gen_city",
+                     disabled=not city_b4):
+            raw = generate_bingo(city_b4)
+            if not raw:
+                st.error(f"No setlist data for **{city_b4}** — try a different city.")
+            else:
+                cards = _inject_free_center(raw, bsize)
+                st.session_state["b4_cards"]  = cards
+                st.session_state["b4_kind"]   = ("city", bsize, city_b4)
+                st.session_state["b4_title"]  = city_b4.title()
+                st.session_state["b4_stem"]   = f"{city_b4.replace(' ', '_')}_Bingo"
+
+    else:  # sphere
+        st.caption("Bingo from a Sphere prediction. "
+                   "🟡 top picks · 🔵 globally common · 🟣 rare / uncommon.")
+        with st.spinner("Loading Sphere schedule..."):
+            sphere_songs_b4, sphere_dates_b4 = fetch_sphere_songs_st()
+
+        today_iso = datetime.date.today().isoformat()
+        upcoming = [d for d in sphere_dates_b4 if d >= today_iso]
+        if not upcoming:
+            st.warning("No upcoming Sphere shows on the schedule.")
+        else:
+            target_b4 = st.selectbox(
+                "Show date",
+                upcoming,
+                format_func=lambda d: datetime.date.fromisoformat(d).strftime("%A, %B %d, %Y"),
+                key="b4_sphere_date",
             )
-            sphere_bsize = 3 if sphere_bsize_label.startswith("3") else 5
+            if st.button("🎲 Generate Sphere Bingo", key="b4_gen_sphere"):
+                with st.spinner(f"Predicting {target_b4}..."):
+                    res_b4 = generate_sphere_setlist(target_b4, sphere_songs_b4)
+                cards = make_sphere_bingo_cards(res_b4["rows"], set(res_b4["excluded"]), bsize)
+                pretty_b4 = datetime.date.fromisoformat(target_b4).strftime("%b %d")
+                st.session_state["b4_cards"]  = cards
+                st.session_state["b4_kind"]   = ("sphere", bsize, target_b4)
+                st.session_state["b4_title"]  = f"Sphere {pretty_b4}"
+                st.session_state["b4_stem"]   = f"Sphere_{target_b4}_Bingo"
 
-            if st.button("🎲 Generate Sphere Bingo", key="gen_sphere_bingo"):
-                global_counter_b, global_shows_b, _, current_gap_b, total_shows_b, _ = load_data()
+    # ── Render the saved card if it matches the current source+size ──
+    saved_kind = st.session_state.get("b4_kind")
+    expected_kind_prefix = (source, bsize)
+    if (saved_kind and saved_kind[0] == source and saved_kind[1] == bsize
+            and st.session_state.get("b4_cards")):
+        bcards = st.session_state["b4_cards"]
+        title  = st.session_state.get("b4_title", "Bingo")
+        stem   = st.session_state.get("b4_stem", "Phish_Bingo")
 
-                def gscore(song):
-                    g = current_gap_b.get(song, total_shows_b)
-                    return (global_counter_b[song] / global_shows_b) * (1 + math.log(g+1) / math.log(total_shows_b+1))
+        cat_styles = {
+            "setlist": "background:#2a2a10;color:#F0E68C;border:1px solid #555522",
+            "common":  "background:#0d2235;color:#7ec8e3;border:1px solid #1a4a66",
+            "rare":    "background:#2a0d35;color:#ce93d8;border:1px solid #5a2a6a",
+        }
+        played_overlay = ("background:linear-gradient(135deg,#3a2800 0%,#5a3d00 100%);"
+                          "color:#FFFACD;border:1.5px solid #FFD54F;"
+                          "box-shadow:0 0 6px rgba(255,213,79,0.35)")
+        free_style = ("background:linear-gradient(135deg,#5a3d00,#3a2800);color:#FFF3B0;"
+                      "border:1.5px solid #FFD54F;font-family:'Shrikhand',cursive")
+        cell_style = ("padding:10px 6px;text-align:center;font-size:12px;"
+                      "font-weight:600;border-radius:8px;min-height:68px;"
+                      "display:flex;align-items:center;justify-content:center;word-break:break-word;")
 
-                # Top 10 from the prediction itself
-                setlist_picks = [r["Song"] for r in sorted(rows, key=lambda r: r["_adj"], reverse=True)[:10]]
-                used = set(setlist_picks) | set(result["excluded"])
-
-                common_pool = sorted(
-                    [(s, gscore(s)) for s, c in global_counter_b.items()
-                     if 5 <= (c / global_shows_b) * 100 < 15 and s not in used],
-                    key=lambda x: x[1], reverse=True
+        labels = ["P", "H", "I"] if bsize == 3 else ["P", "H", "I", "S", "H"]
+        h_cols = st.columns(bsize)
+        for col, label in zip(h_cols, labels):
+            col.markdown(
+                f'<div style="text-align:center;font-size:26px;font-weight:700;'
+                f'color:#FFF3B0;letter-spacing:0.05em;font-family:Shrikhand,cursive">{label}</div>',
+                unsafe_allow_html=True
+            )
+        for row_i in range(bsize):
+            cols = st.columns(bsize)
+            for col_i, col in enumerate(cols):
+                card = bcards[row_i * bsize + col_i]
+                if card.get("free"):
+                    style, label = free_style, card["song"]
+                elif card.get("played"):
+                    style, label = played_overlay, "★ " + card["song"]
+                else:
+                    style, label = cat_styles[card["cat"]], card["song"]
+                col.markdown(
+                    f'<div style="{style};{cell_style}">{label}</div>',
+                    unsafe_allow_html=True
                 )
-                common_picks = [s for s, _ in common_pool[:10]]
-                used |= set(common_picks)
 
-                occasional_pool = sorted(
-                    [(s, gscore(s)) for s, c in global_counter_b.items()
-                     if 1 <= (c / global_shows_b) * 100 < 5 and s not in used],
-                    key=lambda x: x[1], reverse=True
-                )
-                rare_pool = sorted(
-                    [(s, gscore(s)) for s, c in global_counter_b.items()
-                     if (c / global_shows_b) * 100 < 1 and s not in used],
-                    key=lambda x: x[1], reverse=True
-                )
-                rare_picks = [s for s, _ in occasional_pool[:3]] + [s for s, _ in rare_pool[:2]]
-
-                all_bingo = setlist_picks + common_picks + rare_picks
-                random.shuffle(all_bingo)
-                st_set, cm_set = set(setlist_picks), set(common_picks)
-                bingo_cards = [{"song": s,
-                                "cat": "setlist" if s in st_set else "common" if s in cm_set else "rare"}
-                               for s in all_bingo]
-                bingo_cards = _inject_free_center(bingo_cards, sphere_bsize)
-                st.session_state["sphere_bingo"] = bingo_cards
-                st.session_state["sphere_bingo_date"] = target_date
-                st.session_state["sphere_bingo_used_size"] = sphere_bsize
-
-            if (st.session_state.get("sphere_bingo")
-                    and st.session_state.get("sphere_bingo_date") == target_date
-                    and st.session_state.get("sphere_bingo_used_size") == sphere_bsize):
-                bcards = st.session_state["sphere_bingo"]
-                cat_styles = {
-                    "setlist": "background:#3a3a10;color:#FFF3B0;border:1px solid #5a5a22",
-                    "common":  "background:#0d2a45;color:#8fd8f0;border:1px solid #1f5280",
-                    "rare":    "background:#35104a;color:#d4a8e0;border:1px solid #6a3588",
-                }
-                free_style = ("background:linear-gradient(135deg,#5a3d00,#3a2800);color:#FFF3B0;"
-                              "border:1.5px solid #FFD54F;font-family:'Shrikhand',cursive")
-                cell_style = ("padding:10px 6px;text-align:center;font-size:12px;"
-                              "font-weight:600;border-radius:8px;min-height:68px;"
-                              "display:flex;align-items:center;justify-content:center;word-break:break-word;")
-
-                bcol_labels = ["P", "H", "I"] if sphere_bsize == 3 else ["P", "H", "I", "S", "H"]
-                bcol_headers = st.columns(sphere_bsize)
-                for col, label in zip(bcol_headers, bcol_labels):
-                    col.markdown(
-                        f'<div style="text-align:center;font-size:26px;font-weight:700;'
-                        f'color:#FFF3B0;letter-spacing:0.05em;font-family:Shrikhand,cursive">{label}</div>',
-                        unsafe_allow_html=True
-                    )
-                for row_i in range(sphere_bsize):
-                    cols = st.columns(sphere_bsize)
-                    for col_i, col in enumerate(cols):
-                        card = bcards[row_i * sphere_bsize + col_i]
-                        style = free_style if card.get("free") else cat_styles[card["cat"]]
-                        col.markdown(
-                            f'<div style="{style};{cell_style}">{card["song"]}</div>',
-                            unsafe_allow_html=True
-                        )
-
-                pdf_buf = build_bingo_pdf(bcards, f"Sphere {pretty_date}", size=sphere_bsize)
-                st.markdown("")
-                st.download_button(
-                    label="⬇️ Download Printable Bingo PDF",
-                    data=pdf_buf,
-                    file_name=f"Sphere_{target_date}_Bingo_{sphere_bsize}x{sphere_bsize}.pdf",
-                    mime="application/pdf",
-                    key="dl_sphere_bingo_pdf",
-                )
+        # PDF — strip extra fields the builder doesn't know about
+        pdf_cards = [{"song": c["song"], "cat": c["cat"],
+                      **({"free": True} if c.get("free") else {})} for c in bcards]
+        pdf_buf = build_bingo_pdf(pdf_cards, title, size=bsize)
+        st.markdown("")
+        st.download_button(
+            label="⬇️ Download Printable Bingo PDF",
+            data=pdf_buf,
+            file_name=f"{stem}_{bsize}x{bsize}.pdf",
+            mime="application/pdf",
+            key="dl_b4_pdf",
+        )
 
 
 # ═══════════════════════════════════════════════════════════
