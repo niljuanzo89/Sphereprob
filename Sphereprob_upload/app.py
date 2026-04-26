@@ -1674,16 +1674,20 @@ def render_lenny_lizard():
                 <!-- Left eye (front-left) -->
                 <ellipse cx="32" cy="32" rx="15" ry="16" fill="url(#lz-head)" stroke="#0e3a0e" stroke-width="0.9"/>
                 <ellipse cx="34" cy="34" rx="11" ry="12" fill="url(#lz-eye)"/>
-                <ellipse cx="37" cy="36" rx="3.4" ry="6.5" fill="#000"/>
-                <circle  cx="38.5" cy="32" r="2"  fill="#ffffff"/>
+                <g id="lz-pupil-l">
+                  <ellipse cx="37" cy="36" rx="3.4" ry="6.5" fill="#000"/>
+                  <circle  cx="38.5" cy="32" r="2"  fill="#ffffff"/>
+                </g>
                 <ellipse id="lz-lid-l" cx="34" cy="34" rx="12" ry="13"
                          fill="#3a8a25" stroke="#0e3a0e" stroke-width="0.7"/>
 
                 <!-- Right eye (back, slightly higher and bigger) -->
                 <ellipse cx="68" cy="26" rx="16" ry="17" fill="url(#lz-head)" stroke="#0e3a0e" stroke-width="0.9"/>
                 <ellipse cx="70" cy="28" rx="12" ry="13" fill="url(#lz-eye)"/>
-                <ellipse cx="73" cy="30" rx="3.6" ry="7" fill="#000"/>
-                <circle  cx="74.5" cy="26" r="2.2" fill="#ffffff"/>
+                <g id="lz-pupil-r">
+                  <ellipse cx="73" cy="30" rx="3.6" ry="7" fill="#000"/>
+                  <circle  cx="74.5" cy="26" r="2.2" fill="#ffffff"/>
+                </g>
                 <ellipse id="lz-lid-r" cx="70" cy="28" rx="13" ry="14"
                          fill="#3a8a25" stroke="#0e3a0e" stroke-width="0.7"/>
 
@@ -1907,6 +1911,162 @@ def render_lenny_lizard():
                 if (hookTabsForDance()) obs.disconnect();
             });
             obs.observe(doc.body, { childList: true, subtree: true });
+        }
+
+        // ── Eye-gaze tracking ──
+        const svgEl   = doc.getElementById('lenny-svg');
+        const pupilL  = doc.getElementById('lz-pupil-l');
+        const pupilR  = doc.getElementById('lz-pupil-r');
+        // Centers are in SVG-coord space (viewBox 260×180)
+        const eyeCenters = [
+            { x: 37, y: 36, el: pupilL, max: 4 },
+            { x: 73, y: 30, el: pupilR, max: 4 },
+        ];
+        function updateGaze(mx, my) {
+            if (!svgEl) return;
+            const r = svgEl.getBoundingClientRect();
+            const sx = r.width  / 260;
+            const sy = r.height / 180;
+            for (const eye of eyeCenters) {
+                const cx = r.left + eye.x * sx;
+                const cy = r.top  + eye.y * sy;
+                const dx = mx - cx, dy = my - cy;
+                const d  = Math.hypot(dx, dy) || 1;
+                const ramp = Math.min(d, 140) / 140; // smoother near eye
+                const ox = (dx / d) * eye.max * ramp;
+                const oy = (dy / d) * eye.max * ramp;
+                eye.el.setAttribute('transform', `translate(${ox} ${oy})`);
+            }
+        }
+        doc.addEventListener('mousemove', (e) => {
+            if (dragging) return;
+            updateGaze(e.clientX, e.clientY);
+        });
+
+        // ── Drag & throw with physics ──
+        let dragging = false;
+        let throwing = false;
+        let dragOffX = 0, dragOffY = 0;
+        let history  = [];
+
+        function pinToLeftTop() {
+            // Convert from right/bottom anchoring to left/top so we can move freely
+            const r = wrap.getBoundingClientRect();
+            wrap.style.left   = r.left + 'px';
+            wrap.style.top    = r.top  + 'px';
+            wrap.style.right  = 'auto';
+            wrap.style.bottom = 'auto';
+        }
+
+        charEl.addEventListener('mousedown', (e) => {
+            // Only left-button; ignore clicks on the close button etc
+            if (e.button !== 0) return;
+            e.preventDefault();
+            // Cancel any in-flight throw
+            throwing = false;
+            charEl.classList.remove('jump', 'dance');
+            charEl.style.animation = 'none'; // pause idle bob
+            charEl.style.transform = '';
+
+            pinToLeftTop();
+            const r = wrap.getBoundingClientRect();
+            dragOffX = e.clientX - r.left;
+            dragOffY = e.clientY - r.top;
+            dragging = true;
+            charEl.style.cursor = 'grabbing';
+            hideBubble();
+            history = [{ x: e.clientX, y: e.clientY, t: performance.now() }];
+        });
+
+        doc.addEventListener('mousemove', (e) => {
+            if (!dragging) return;
+            wrap.style.left = (e.clientX - dragOffX) + 'px';
+            wrap.style.top  = (e.clientY - dragOffY) + 'px';
+            history.push({ x: e.clientX, y: e.clientY, t: performance.now() });
+            if (history.length > 6) history.shift();
+        });
+
+        doc.addEventListener('mouseup', (e) => {
+            if (!dragging) return;
+            dragging = false;
+            charEl.style.cursor = 'pointer';
+            // Distance moved since mousedown — short distance = treat as click
+            const a = history[0];
+            const b = history[history.length - 1];
+            const dist = Math.hypot(b.x - a.x, b.y - a.y);
+            if (dist < 6) {
+                // Click, not drag. Restore idle animation; existing click handler fires next.
+                charEl.style.animation = '';
+                return;
+            }
+            // Suppress the upcoming click event (Lenny's onclick = jump+tip)
+            const swallow = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+            doc.addEventListener('click', swallow, { capture: true, once: true });
+            // Compute toss velocity from recent mouse history
+            const dt = Math.max(b.t - a.t, 16);
+            const vx = (b.x - a.x) / dt * 16; // px per frame at ~60fps
+            const vy = (b.y - a.y) / dt * 16;
+            startThrow(vx, vy);
+        });
+
+        function startThrow(vx, vy) {
+            throwing = true;
+            const r0 = wrap.getBoundingClientRect();
+            let x = r0.left, y = r0.top;
+            let rot = 0;
+            // Spin proportional to throw speed, with a min so a gentle drop still tumbles
+            const speed = Math.hypot(vx, vy);
+            let vr = (vx >= 0 ? 1 : -1) * Math.max(speed * 0.8, 4);
+            const gravity = 0.7;
+            const bounce  = 0.45;
+            const friction = 0.985;
+            let stillFrames = 0;
+
+            function step() {
+                if (!throwing) return;
+                vy += gravity;
+                x  += vx;
+                y  += vy;
+                rot += vr;
+
+                const w = wrap.offsetWidth;
+                const h = wrap.offsetHeight;
+                const maxX = (window.innerWidth || doc.documentElement.clientWidth) - w - 4;
+                const maxY = (window.innerHeight || doc.documentElement.clientHeight) - h - 4;
+
+                // Walls
+                if (x < 4)    { x = 4;    vx = -vx * bounce; vr = -vr * 0.7; }
+                if (x > maxX) { x = maxX; vx = -vx * bounce; vr = -vr * 0.7; }
+                // Ceiling
+                if (y < 4)    { y = 4;    vy = -vy * bounce; }
+
+                // Ground
+                if (y >= maxY) {
+                    y = maxY;
+                    vy = -vy * bounce;
+                    vx *= friction;
+                    vr *= 0.7;
+                    if (Math.abs(vy) < 1.6 && Math.abs(vx) < 0.4) {
+                        stillFrames++;
+                    } else {
+                        stillFrames = 0;
+                    }
+                }
+
+                wrap.style.left = x + 'px';
+                wrap.style.top  = y + 'px';
+                charEl.style.transform = `rotate(${rot}deg)`;
+
+                if (stillFrames > 5) {
+                    // Settle: snap upright, restore idle animation
+                    throwing = false;
+                    charEl.style.transform  = '';
+                    charEl.style.animation  = '';
+                    return;
+                }
+                requestAnimationFrame(step);
+            }
+            requestAnimationFrame(step);
         }
 
         // Greet on first load after a short pause
