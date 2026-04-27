@@ -2187,7 +2187,12 @@ def render_lenny_lizard():
             dragging = true;
             charEl.style.cursor = 'grabbing';
             hideBubble();
-            // 🥚 Easter egg: hold the cursor on Lenny → he morphs into Clippy
+            // 🥚 Easter egg: hold the cursor on Lenny → he morphs into Clippy.
+            // Set display directly (defeats any CSS specificity quirks).
+            const _lz = doc.getElementById('lenny-svg');
+            const _cl = doc.getElementById('lenny-clippy');
+            if (_lz) _lz.style.display = 'none';
+            if (_cl) _cl.style.display = 'block';
             charEl.classList.add('as-clippy');
             history = [{ x: e.clientX, y: e.clientY, t: performance.now() }];
         });
@@ -2205,6 +2210,10 @@ def render_lenny_lizard():
             dragging = false;
             // 🥚 Clippy reverts back to Lenny on release
             charEl.classList.remove('as-clippy');
+            const _lz = doc.getElementById('lenny-svg');
+            const _cl = doc.getElementById('lenny-clippy');
+            if (_lz) _lz.style.display = '';
+            if (_cl) _cl.style.display = 'none';
             charEl.style.cursor = 'pointer';
             // Distance moved since mousedown — short distance = treat as click
             const a = history[0];
