@@ -17,7 +17,22 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 # reportlab imported lazily inside build_bingo_pdf
 
-FILEPATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "phish_net_setlists_2016_2026.csv")
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_SOURCES = {
+    "Original (legacy)":    "phish_net_setlists_2016_2026.csv",
+    "Clean (Phish-only)":   "Phish_net_setlists_CLEAN.csv",
+}
+def _resolve_data_source():
+    """Pick the active CSV based on session state. Defaults to the clean file
+    if it exists, otherwise the legacy file."""
+    choice = (st.session_state.get("csv_variant") or
+              ("Clean (Phish-only)"
+               if os.path.exists(os.path.join(_BASE_DIR, DATA_SOURCES["Clean (Phish-only)"]))
+               else "Original (legacy)"))
+    return choice, os.path.join(_BASE_DIR, DATA_SOURCES[choice])
+
+# These get re-evaluated each Streamlit rerun
+_active_choice, FILEPATH = _resolve_data_source()
 START_YEAR = 2008
 
 TIER_TARGETS = {
@@ -45,7 +60,14 @@ def load_data():
     song_positions = defaultdict(list)
 
     with open(FILEPATH, newline="") as f:
-        rows = [r for r in csv.DictReader(f) if r["date"][:4].isdigit() and int(r["date"][:4]) >= START_YEAR]
+        rows = [
+            r for r in csv.DictReader(f)
+            if r["date"][:4].isdigit() and int(r["date"][:4]) >= START_YEAR
+            # Filter to Phish-only — the source CSV also includes TAB, Mike Gordon,
+            # Fishman, Page McConnell, and "Guest Appearance" rows. Backwards-compat:
+            # if the artist column is missing/blank (older CSV), keep the row.
+            and (r.get("artist", "") in ("", "Phish"))
+        ]
 
     show_index = 0
     for row in rows:
@@ -344,6 +366,9 @@ def generate_sphere_setlist(target_date, sphere_songs_played):
     with open(FILEPATH, newline="") as f:
         for row in csv.DictReader(f):
             if not row["date"][:4].isdigit():
+                continue
+            # Phish-only (skip TAB, Mike, Fishman, Page, Guest Appearances)
+            if row.get("artist", "") not in ("", "Phish"):
                 continue
             songs_here = [s.strip() for s in row["setlist"].split("|") if s.strip()]
             if songs_here:
@@ -698,6 +723,9 @@ def fetch_sphere_songs_st():
     sphere_dates = []
     with open(FILEPATH, newline="") as f:
         for row in csv.DictReader(f):
+            # Phish-only Sphere shows (skip side-project nights at the same venue, if any)
+            if row.get("artist", "") not in ("", "Phish"):
+                continue
             if "sphere" in row.get("venue","").lower() and row["date"].startswith("2026"):
                 sphere_dates.append(row["date"])
     current_year = datetime.date.today().year
@@ -723,6 +751,9 @@ def fetch_sphere_songs_st():
             with urllib.request.urlopen(req, context=ctx, timeout=10) as r:
                 data = json.loads(r.read())
             for s in data.get("data",[]):
+                # Filter to Phish (artistid=1) — same date can have TAB/Mike rows too
+                if s.get("artistid") not in (1, "1", None):
+                    continue
                 name = s["song"]
                 song_dates.setdefault(name, [])
                 if date not in song_dates[name]:
@@ -737,6 +768,9 @@ def build_top50_st():
     with open(FILEPATH, newline="") as f:
         for row in csv.DictReader(f):
             if not row["date"][:4].isdigit() or int(row["date"][:4]) < START_YEAR:
+                continue
+            # Phish-only
+            if row.get("artist", "") not in ("", "Phish"):
                 continue
             songs = [s.strip() for s in row["setlist"].split("|") if s.strip()]
             if not songs: continue
@@ -874,6 +908,9 @@ def ask_trey_st(question, global_counter, global_shows):
         for row in csv.DictReader(f):
             if not row["date"][:4].isdigit() or int(row["date"][:4]) < START_YEAR:
                 continue
+            # Phish-only
+            if row.get("artist", "") not in ("", "Phish"):
+                continue
             songs_row = [s.strip() for s in row["setlist"].split("|") if s.strip()]
             if not songs_row:
                 continue  # skip rows with no setlist (future/scheduled shows)
@@ -911,6 +948,34 @@ def ask_trey_st(question, global_counter, global_shows):
 # ── UI ──────────────────────────────────────────────────────────────────────
 
 st.set_page_config(page_title="Gotta-Jibbootistics", page_icon="🍩", layout="centered")
+
+# ── Data-source toggle (sidebar) ──
+# Lets the user pick between the legacy CSV (which has merged-setlist
+# contamination on multi-band days) and the clean re-scrape (Phish-only,
+# per-show artist filtering). Defaults to Clean if available.
+_default_choice = "Clean (Phish-only)" if os.path.exists(
+    os.path.join(_BASE_DIR, DATA_SOURCES["Clean (Phish-only)"])
+) else "Original (legacy)"
+_available_choices = [k for k, v in DATA_SOURCES.items()
+                      if os.path.exists(os.path.join(_BASE_DIR, v))]
+if len(_available_choices) > 1:
+    _picked = st.sidebar.radio(
+        "📊 Data source",
+        _available_choices,
+        index=_available_choices.index(_default_choice),
+        key="csv_variant",
+        help=("Original = legacy CSV (~96% of multi-band days have contaminated setlists "
+              "due to a scraping bug). "
+              "Clean = a fresh re-scrape with proper artistid filtering. "
+              "Toggling clears caches and recomputes all stats."),
+    )
+    # Re-resolve and clear caches if variant changed mid-session
+    _new_choice, _new_path = _resolve_data_source()
+    if st.session_state.get("_active_csv_path") != _new_path:
+        st.session_state["_active_csv_path"] = _new_path
+        st.cache_data.clear()
+    FILEPATH = _new_path
+    st.sidebar.caption(f"Using: `{os.path.basename(FILEPATH)}`")
 
 st.markdown("""
     <style>
