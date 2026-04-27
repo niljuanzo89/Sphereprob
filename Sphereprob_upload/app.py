@@ -1848,14 +1848,18 @@ def render_lenny_lizard():
                 <!-- Nostril -->
                 <circle cx="14" cy="58" r="1.4" fill="#0e3a0e"/>
               </svg>
-              <!-- 🥚 Clippy form (shown while user is click-and-holding Lenny) -->
-              <svg id="lenny-clippy" viewBox="0 0 260 180" width="106" height="73" xmlns="http://www.w3.org/2000/svg" style="display:none">
+              <!-- 🥚 Clippy form (shown after user holds the cursor on Lenny for 5s) -->
+              <svg id="lenny-clippy" viewBox="0 0 260 200" width="106" height="82" xmlns="http://www.w3.org/2000/svg" style="display:none">
                 <defs>
-                  <linearGradient id="cl-wire" x1="0%" y1="0%" x2="60%" y2="100%">
-                    <stop offset="0%"  stop-color="#f4f4f8"/>
-                    <stop offset="35%" stop-color="#c0c0c8"/>
-                    <stop offset="65%" stop-color="#7a7a82"/>
-                    <stop offset="100%" stop-color="#3a3a42"/>
+                  <linearGradient id="cl-wire" x1="0%" y1="0%" x2="55%" y2="100%">
+                    <stop offset="0%"  stop-color="#fdfdff"/>
+                    <stop offset="35%" stop-color="#c4c4cc"/>
+                    <stop offset="65%" stop-color="#76767e"/>
+                    <stop offset="100%" stop-color="#2a2a30"/>
+                  </linearGradient>
+                  <linearGradient id="cl-wire-hi" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%"  stop-color="rgba(255,255,255,0.7)"/>
+                    <stop offset="100%" stop-color="rgba(255,255,255,0.0)"/>
                   </linearGradient>
                   <radialGradient id="cl-eye-w" cx="38%" cy="30%" r="80%">
                     <stop offset="0%"  stop-color="#ffffff"/>
@@ -1863,39 +1867,44 @@ def render_lenny_lizard():
                     <stop offset="100%" stop-color="#a8a8b0"/>
                   </radialGradient>
                 </defs>
-                <!-- Paperclip body, drawn as one stroked path
-                     (outer rectangle + inner U-bend, classic Clippy shape) -->
-                <path d="M 92,40
-                         Q 92,20 112,20
-                         L 188,20
-                         Q 208,20 208,40
-                         L 208,150
-                         Q 208,168 192,168
-                         Q 176,168 176,150
-                         L 176,52
-                         Q 176,38 162,38
-                         L 122,38
-                         Q 108,38 108,52
-                         L 108,138"
+                <!-- Outer rounded body (the big oval-ish loop of the paperclip) -->
+                <path d="M 80,40
+                         L 80,150
+                         Q 80,178 110,178
+                         L 200,178
+                         Q 226,178 226,150
+                         L 226,40
+                         Q 226,15 198,15
+                         L 110,15
+                         Q 80,15 80,40 Z"
                       stroke="url(#cl-wire)" stroke-width="11"
                       fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                <!-- Subtle highlight along the wire (top-left side) -->
-                <path d="M 96,42 Q 96,26 112,24 L 188,24"
-                      stroke="rgba(255,255,255,0.55)" stroke-width="2.5"
+                <!-- Inner clip "tongue": U-shape attached at top, free at bottom -->
+                <path d="M 118,150
+                         L 118,55
+                         Q 118,38 134,38
+                         L 184,38
+                         Q 200,38 200,55
+                         L 200,150"
+                      stroke="url(#cl-wire)" stroke-width="11"
+                      fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <!-- Specular highlight running along the top-left of the wire -->
+                <path d="M 86,44 Q 86,22 108,22 L 196,22"
+                      stroke="url(#cl-wire-hi)" stroke-width="3"
                       fill="none" stroke-linecap="round"/>
-                <!-- Eyebrows (raised, alert) -->
-                <path d="M 80,52 Q 100,40 128,46"
+                <!-- Eyebrows (raised, alert — sit above the eyes) -->
+                <path d="M 88,68 Q 110,52 138,60"
                       stroke="#0a0a0a" stroke-width="6.5" fill="none" stroke-linecap="round"/>
-                <path d="M 156,46 Q 184,40 204,52"
+                <path d="M 168,60 Q 196,52 218,68"
                       stroke="#0a0a0a" stroke-width="6.5" fill="none" stroke-linecap="round"/>
                 <!-- Left eye -->
-                <ellipse cx="108" cy="78" rx="22" ry="20" fill="url(#cl-eye-w)" stroke="#0a0a0a" stroke-width="1.6"/>
-                <ellipse cx="111" cy="82" rx="9" ry="11" fill="#000"/>
-                <circle  cx="114" cy="76" r="2.6" fill="#ffffff"/>
+                <ellipse cx="113" cy="92" rx="24" ry="22" fill="url(#cl-eye-w)" stroke="#0a0a0a" stroke-width="2"/>
+                <ellipse cx="117" cy="96" rx="10" ry="13" fill="#000"/>
+                <circle  cx="121" cy="89" r="2.8" fill="#ffffff"/>
                 <!-- Right eye -->
-                <ellipse cx="180" cy="78" rx="22" ry="20" fill="url(#cl-eye-w)" stroke="#0a0a0a" stroke-width="1.6"/>
-                <ellipse cx="183" cy="82" rx="9" ry="11" fill="#000"/>
-                <circle  cx="186" cy="76" r="2.6" fill="#ffffff"/>
+                <ellipse cx="193" cy="92" rx="24" ry="22" fill="url(#cl-eye-w)" stroke="#0a0a0a" stroke-width="2"/>
+                <ellipse cx="197" cy="96" rx="10" ry="13" fill="#000"/>
+                <circle  cx="201" cy="89" r="2.8" fill="#ffffff"/>
               </svg>
             </div>
         `;
@@ -2160,6 +2169,32 @@ def render_lenny_lizard():
         let throwing = false;
         let dragOffX = 0, dragOffY = 0;
         let history  = [];
+        // Clippy hold: morph triggers only after 5 seconds of continuous hold
+        let clippyHoldTimer = null;
+        let clippyEngaged   = false;
+        const CLIPPY_HOLD_MS = 5000;
+        function morphToClippy() {
+            const lz = doc.getElementById('lenny-svg');
+            const cl = doc.getElementById('lenny-clippy');
+            if (lz) lz.style.display = 'none';
+            if (cl) cl.style.display = 'block';
+            charEl.classList.add('as-clippy');
+            clippyEngaged = true;
+        }
+        function morphBackToLenny() {
+            const lz = doc.getElementById('lenny-svg');
+            const cl = doc.getElementById('lenny-clippy');
+            if (lz) lz.style.display = '';
+            if (cl) cl.style.display = 'none';
+            charEl.classList.remove('as-clippy');
+            clippyEngaged = false;
+        }
+        function cancelClippyHold() {
+            if (clippyHoldTimer) {
+                clearTimeout(clippyHoldTimer);
+                clippyHoldTimer = null;
+            }
+        }
 
         function pinToLeftTop() {
             // Convert from right/bottom anchoring to left/top so we can move freely
@@ -2187,13 +2222,10 @@ def render_lenny_lizard():
             dragging = true;
             charEl.style.cursor = 'grabbing';
             hideBubble();
-            // 🥚 Easter egg: hold the cursor on Lenny → he morphs into Clippy.
-            // Set display directly (defeats any CSS specificity quirks).
-            const _lz = doc.getElementById('lenny-svg');
-            const _cl = doc.getElementById('lenny-clippy');
-            if (_lz) _lz.style.display = 'none';
-            if (_cl) _cl.style.display = 'block';
-            charEl.classList.add('as-clippy');
+            // 🥚 Easter egg: holding the cursor on Lenny for 5 seconds → Clippy.
+            // Holding while dragging counts — the timer is mousedown-to-mouseup.
+            cancelClippyHold();
+            clippyHoldTimer = setTimeout(morphToClippy, CLIPPY_HOLD_MS);
             history = [{ x: e.clientX, y: e.clientY, t: performance.now() }];
         });
 
@@ -2208,12 +2240,9 @@ def render_lenny_lizard():
         doc.addEventListener('mouseup', (e) => {
             if (!dragging) return;
             dragging = false;
-            // 🥚 Clippy reverts back to Lenny on release
-            charEl.classList.remove('as-clippy');
-            const _lz = doc.getElementById('lenny-svg');
-            const _cl = doc.getElementById('lenny-clippy');
-            if (_lz) _lz.style.display = '';
-            if (_cl) _cl.style.display = 'none';
+            // 🥚 Cancel hold timer; if Clippy was engaged, revert
+            cancelClippyHold();
+            if (clippyEngaged) morphBackToLenny();
             charEl.style.cursor = 'pointer';
             // Distance moved since mousedown — short distance = treat as click
             const a = history[0];
