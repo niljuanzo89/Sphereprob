@@ -1848,63 +1848,69 @@ def render_lenny_lizard():
                 <!-- Nostril -->
                 <circle cx="14" cy="58" r="1.4" fill="#0e3a0e"/>
               </svg>
-              <!-- 🥚 Clippy form (shown after user holds the cursor on Lenny for 5s) -->
-              <svg id="lenny-clippy" viewBox="0 0 260 200" width="106" height="82" xmlns="http://www.w3.org/2000/svg" style="display:none">
+              <!-- 🥚 Clippy form (shown after 5s of stationary click-and-hold) -->
+              <svg id="lenny-clippy" viewBox="0 0 280 220" width="116" height="91" xmlns="http://www.w3.org/2000/svg" style="display:none">
                 <defs>
-                  <linearGradient id="cl-wire" x1="0%" y1="0%" x2="55%" y2="100%">
-                    <stop offset="0%"  stop-color="#fdfdff"/>
-                    <stop offset="35%" stop-color="#c4c4cc"/>
-                    <stop offset="65%" stop-color="#76767e"/>
-                    <stop offset="100%" stop-color="#2a2a30"/>
-                  </linearGradient>
-                  <linearGradient id="cl-wire-hi" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%"  stop-color="rgba(255,255,255,0.7)"/>
-                    <stop offset="100%" stop-color="rgba(255,255,255,0.0)"/>
+                  <!-- Cylindrical wire gradient — top-lit metal -->
+                  <linearGradient id="cl-wire" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%"   stop-color="#fafafd"/>
+                    <stop offset="40%"  stop-color="#cfcfd6"/>
+                    <stop offset="80%"  stop-color="#7d7d86"/>
+                    <stop offset="100%" stop-color="#3a3a42"/>
                   </linearGradient>
                   <radialGradient id="cl-eye-w" cx="38%" cy="30%" r="80%">
                     <stop offset="0%"  stop-color="#ffffff"/>
-                    <stop offset="80%" stop-color="#e8e8ee"/>
-                    <stop offset="100%" stop-color="#a8a8b0"/>
+                    <stop offset="75%" stop-color="#eaeaef"/>
+                    <stop offset="100%" stop-color="#9696a0"/>
+                  </radialGradient>
+                  <radialGradient id="cl-brow" cx="40%" cy="30%" r="90%">
+                    <stop offset="0%"   stop-color="#5a3920"/>
+                    <stop offset="60%"  stop-color="#2c1808"/>
+                    <stop offset="100%" stop-color="#0e0602"/>
                   </radialGradient>
                 </defs>
-                <!-- Outer rounded body (the big oval-ish loop of the paperclip) -->
+
+                <!-- ONE continuous bent wire forming the classic paperclip topology:
+                     outer rectangle, then up-and-back into an inner tongue that
+                     opens upward — same path a real paperclip's wire follows.
+                     Endpoints: free at top-left (M) and free at top-right (last L). -->
                 <path d="M 80,40
-                         L 80,150
-                         Q 80,178 110,178
-                         L 200,178
-                         Q 226,178 226,150
-                         L 226,40
-                         Q 226,15 198,15
-                         L 110,15
-                         Q 80,15 80,40 Z"
-                      stroke="url(#cl-wire)" stroke-width="11"
+                         L 80,170
+                         Q 80,192 105,192
+                         L 215,192
+                         Q 240,192 240,170
+                         L 240,40
+                         Q 240,18 215,18
+                         L 130,18
+                         Q 110,18 110,40
+                         L 110,150
+                         Q 110,170 130,170
+                         L 192,170
+                         Q 210,170 210,150
+                         L 210,55"
+                      stroke="url(#cl-wire)" stroke-width="14"
                       fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                <!-- Inner clip "tongue": U-shape attached at top, free at bottom -->
-                <path d="M 118,150
-                         L 118,55
-                         Q 118,38 134,38
-                         L 184,38
-                         Q 200,38 200,55
-                         L 200,150"
-                      stroke="url(#cl-wire)" stroke-width="11"
-                      fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                <!-- Specular highlight running along the top-left of the wire -->
-                <path d="M 86,44 Q 86,22 108,22 L 196,22"
-                      stroke="url(#cl-wire-hi)" stroke-width="3"
-                      fill="none" stroke-linecap="round"/>
-                <!-- Eyebrows (raised, alert — sit above the eyes) -->
-                <path d="M 88,68 Q 110,52 138,60"
-                      stroke="#0a0a0a" stroke-width="6.5" fill="none" stroke-linecap="round"/>
-                <path d="M 168,60 Q 196,52 218,68"
-                      stroke="#0a0a0a" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+
+                <!-- Soft top highlight (suggests cylindrical metal) -->
+                <path d="M 86,42 Q 86,22 108,22 L 220,22"
+                      stroke="rgba(255,255,255,0.55)" stroke-width="3"
+                      fill="none" stroke-linecap="round" opacity="0.7"/>
+
+                <!-- 3D blob eyebrows — modern-Clippy style ovals, angled inward -->
+                <ellipse cx="100" cy="68" rx="20" ry="7" fill="url(#cl-brow)"
+                         transform="rotate(-18 100 68)"/>
+                <ellipse cx="190" cy="68" rx="20" ry="7" fill="url(#cl-brow)"
+                         transform="rotate(18 190 68)"/>
+
+                <!-- Eyes: positioned in the upper inner area, in front of the wire -->
                 <!-- Left eye -->
-                <ellipse cx="113" cy="92" rx="24" ry="22" fill="url(#cl-eye-w)" stroke="#0a0a0a" stroke-width="2"/>
-                <ellipse cx="117" cy="96" rx="10" ry="13" fill="#000"/>
-                <circle  cx="121" cy="89" r="2.8" fill="#ffffff"/>
+                <ellipse cx="110" cy="105" rx="28" ry="26" fill="url(#cl-eye-w)" stroke="#0a0a0a" stroke-width="2.2"/>
+                <ellipse cx="114" cy="110" rx="12" ry="15" fill="#0a0a0a"/>
+                <circle  cx="118" cy="102" r="3.2" fill="#ffffff"/>
                 <!-- Right eye -->
-                <ellipse cx="193" cy="92" rx="24" ry="22" fill="url(#cl-eye-w)" stroke="#0a0a0a" stroke-width="2"/>
-                <ellipse cx="197" cy="96" rx="10" ry="13" fill="#000"/>
-                <circle  cx="201" cy="89" r="2.8" fill="#ffffff"/>
+                <ellipse cx="190" cy="105" rx="28" ry="26" fill="url(#cl-eye-w)" stroke="#0a0a0a" stroke-width="2.2"/>
+                <ellipse cx="194" cy="110" rx="12" ry="15" fill="#0a0a0a"/>
+                <circle  cx="198" cy="102" r="3.2" fill="#ffffff"/>
               </svg>
             </div>
         `;
@@ -2169,10 +2175,13 @@ def render_lenny_lizard():
         let throwing = false;
         let dragOffX = 0, dragOffY = 0;
         let history  = [];
-        // Clippy hold: morph triggers only after 5 seconds of continuous hold
+        // Clippy hold: morph triggers only after 5 seconds of STATIONARY hold.
+        // Any cursor movement past CLIPPY_MOVE_TOLERANCE px resets the countdown.
         let clippyHoldTimer = null;
         let clippyEngaged   = false;
+        let clippyAnchor    = null;   // {x,y} — where the still-hold started
         const CLIPPY_HOLD_MS = 5000;
+        const CLIPPY_MOVE_TOLERANCE = 5;  // px of slop allowed (hand jitter)
         function morphToClippy() {
             const lz = doc.getElementById('lenny-svg');
             const cl = doc.getElementById('lenny-clippy');
@@ -2222,9 +2231,9 @@ def render_lenny_lizard():
             dragging = true;
             charEl.style.cursor = 'grabbing';
             hideBubble();
-            // 🥚 Easter egg: holding the cursor on Lenny for 5 seconds → Clippy.
-            // Holding while dragging counts — the timer is mousedown-to-mouseup.
+            // 🥚 Easter egg: only fires if Lenny stays STILL for 5 seconds.
             cancelClippyHold();
+            clippyAnchor = { x: e.clientX, y: e.clientY };
             clippyHoldTimer = setTimeout(morphToClippy, CLIPPY_HOLD_MS);
             history = [{ x: e.clientX, y: e.clientY, t: performance.now() }];
         });
@@ -2235,6 +2244,17 @@ def render_lenny_lizard():
             wrap.style.top  = (e.clientY - dragOffY) + 'px';
             history.push({ x: e.clientX, y: e.clientY, t: performance.now() });
             if (history.length > 6) history.shift();
+            // 🥚 Movement past tolerance resets the Clippy hold timer.
+            // Once already morphed, leave him as Clippy until release.
+            if (!clippyEngaged && clippyAnchor) {
+                const dx = e.clientX - clippyAnchor.x;
+                const dy = e.clientY - clippyAnchor.y;
+                if (Math.hypot(dx, dy) > CLIPPY_MOVE_TOLERANCE) {
+                    cancelClippyHold();
+                    clippyAnchor = { x: e.clientX, y: e.clientY };
+                    clippyHoldTimer = setTimeout(morphToClippy, CLIPPY_HOLD_MS);
+                }
+            }
         });
 
         doc.addEventListener('mouseup', (e) => {
