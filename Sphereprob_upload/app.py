@@ -1848,6 +1848,55 @@ def render_lenny_lizard():
                 <!-- Nostril -->
                 <circle cx="14" cy="58" r="1.4" fill="#0e3a0e"/>
               </svg>
+              <!-- 🥚 Clippy form (shown while user is click-and-holding Lenny) -->
+              <svg id="lenny-clippy" viewBox="0 0 260 180" width="106" height="73" xmlns="http://www.w3.org/2000/svg" style="display:none">
+                <defs>
+                  <linearGradient id="cl-wire" x1="0%" y1="0%" x2="60%" y2="100%">
+                    <stop offset="0%"  stop-color="#f4f4f8"/>
+                    <stop offset="35%" stop-color="#c0c0c8"/>
+                    <stop offset="65%" stop-color="#7a7a82"/>
+                    <stop offset="100%" stop-color="#3a3a42"/>
+                  </linearGradient>
+                  <radialGradient id="cl-eye-w" cx="38%" cy="30%" r="80%">
+                    <stop offset="0%"  stop-color="#ffffff"/>
+                    <stop offset="80%" stop-color="#e8e8ee"/>
+                    <stop offset="100%" stop-color="#a8a8b0"/>
+                  </radialGradient>
+                </defs>
+                <!-- Paperclip body, drawn as one stroked path
+                     (outer rectangle + inner U-bend, classic Clippy shape) -->
+                <path d="M 92,40
+                         Q 92,20 112,20
+                         L 188,20
+                         Q 208,20 208,40
+                         L 208,150
+                         Q 208,168 192,168
+                         Q 176,168 176,150
+                         L 176,52
+                         Q 176,38 162,38
+                         L 122,38
+                         Q 108,38 108,52
+                         L 108,138"
+                      stroke="url(#cl-wire)" stroke-width="11"
+                      fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <!-- Subtle highlight along the wire (top-left side) -->
+                <path d="M 96,42 Q 96,26 112,24 L 188,24"
+                      stroke="rgba(255,255,255,0.55)" stroke-width="2.5"
+                      fill="none" stroke-linecap="round"/>
+                <!-- Eyebrows (raised, alert) -->
+                <path d="M 80,52 Q 100,40 128,46"
+                      stroke="#0a0a0a" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+                <path d="M 156,46 Q 184,40 204,52"
+                      stroke="#0a0a0a" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+                <!-- Left eye -->
+                <ellipse cx="108" cy="78" rx="22" ry="20" fill="url(#cl-eye-w)" stroke="#0a0a0a" stroke-width="1.6"/>
+                <ellipse cx="111" cy="82" rx="9" ry="11" fill="#000"/>
+                <circle  cx="114" cy="76" r="2.6" fill="#ffffff"/>
+                <!-- Right eye -->
+                <ellipse cx="180" cy="78" rx="22" ry="20" fill="url(#cl-eye-w)" stroke="#0a0a0a" stroke-width="1.6"/>
+                <ellipse cx="183" cy="82" rx="9" ry="11" fill="#000"/>
+                <circle  cx="186" cy="76" r="2.6" fill="#ffffff"/>
+              </svg>
             </div>
         `;
         doc.body.appendChild(wrap);
@@ -1875,6 +1924,15 @@ def render_lenny_lizard():
                 transition: transform 0.18s ease;
                 animation: lenny-idle 4.2s ease-in-out infinite;
                 will-change: transform;
+            }
+            /* 🥚 Clippy mode — engaged while user click-and-holds Lenny */
+            #lenny-char.as-clippy #lenny-svg    { display: none !important; }
+            #lenny-char.as-clippy #lenny-clippy { display: block !important;
+                animation: lenny-clippy-pop 0.28s cubic-bezier(.34,1.56,.64,1); }
+            @keyframes lenny-clippy-pop {
+                0%   { transform: scale(0.6) rotate(-6deg); opacity: 0.4; }
+                70%  { transform: scale(1.08) rotate(2deg); opacity: 1; }
+                100% { transform: scale(1) rotate(0); opacity: 1; }
             }
             /* Tail wag — pivot at the tail/body joint (175,118) */
             #lz-tail-grp {
@@ -2129,6 +2187,8 @@ def render_lenny_lizard():
             dragging = true;
             charEl.style.cursor = 'grabbing';
             hideBubble();
+            // 🥚 Easter egg: hold the cursor on Lenny → he morphs into Clippy
+            charEl.classList.add('as-clippy');
             history = [{ x: e.clientX, y: e.clientY, t: performance.now() }];
         });
 
@@ -2143,6 +2203,8 @@ def render_lenny_lizard():
         doc.addEventListener('mouseup', (e) => {
             if (!dragging) return;
             dragging = false;
+            // 🥚 Clippy reverts back to Lenny on release
+            charEl.classList.remove('as-clippy');
             charEl.style.cursor = 'pointer';
             // Distance moved since mousedown — short distance = treat as click
             const a = history[0];
