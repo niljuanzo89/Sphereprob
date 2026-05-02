@@ -899,7 +899,9 @@ def ask_trey_st(question, global_counter, global_shows):
     pct   = count / global_shows * 100
     sphere_songs, sphere_dates = fetch_sphere_songs_st()
     sphere_played = sphere_songs.get(match, [])
-    shows_done  = len([d for d in sphere_dates if d <= datetime.date.today().isoformat()])
+    # "Done" = dates with setlist data (today's not-yet-played show is still upcoming)
+    _played_trey = {d for dates in sphere_songs.values() for d in dates}
+    shows_done  = sum(1 for d in sphere_dates if d in _played_trey)
     shows_left  = len(sphere_dates) - shows_done
 
     song_last_idx = {}
@@ -1303,8 +1305,9 @@ def get_hero_stats():
         sphere_songs, sphere_dates = fetch_sphere_songs_st()
     except Exception:
         sphere_songs, sphere_dates = {}, []
-    today_iso = datetime.date.today().isoformat()
-    done = sum(1 for d in sphere_dates if d <= today_iso)
+    # "Done" = dates with actual setlist data (today's show isn't done until played)
+    _played_hero = {d for dates in sphere_songs.values() for d in dates}
+    done = sum(1 for d in sphere_dates if d in _played_hero)
     left = max(0, len(sphere_dates) - done)
     return {
         "shows": global_shows,
@@ -1520,8 +1523,10 @@ def _compute_last_night_accuracy():
         sphere_songs, sphere_dates = fetch_sphere_songs_st()
     except Exception:
         return None
-    today_iso = datetime.date.today().isoformat()
-    played = sorted(d for d in sphere_dates if d <= today_iso)
+    # "Played" = a date that actually has setlist data (not just a date <= today).
+    # This guards against tonight's show being treated as "last night's prediction".
+    _setlist_dates = {d for dates in sphere_songs.values() for d in dates}
+    played = sorted(_setlist_dates)
     if not played:
         return None
     # Walk back from today: skip any "scheduled but not yet played" dates
@@ -3063,7 +3068,10 @@ with tab2:
 
     top50 = global_counter_t50.most_common(50)
     today_str = datetime.date.today().isoformat()
-    shows_done = len([d for d in sphere_dates_t50 if d <= today_str])
+    # "Played" = dates with actual setlist data (avoid counting today's
+    # not-yet-started show as already played).
+    _played_t50 = {d for dates in sphere_songs_t50.values() for d in dates}
+    shows_done = sum(1 for d in sphere_dates_t50 if d in _played_t50)
     shows_left = len(sphere_dates_t50) - shows_done
 
     # ── Possum insight bubble ──────────────────────────────
@@ -3259,8 +3267,12 @@ with tab3:
         sphere_songs_p, sphere_dates_p = fetch_sphere_songs_st()
 
     today_iso  = datetime.date.today().isoformat()
-    played     = sorted(d for d in sphere_dates_p if d <= today_iso)
-    upcoming   = sorted(d for d in sphere_dates_p if d > today_iso)
+    # A Sphere date counts as "played" iff at least one song appears in the
+    # API's setlist data for that date. Comparing dates to today is wrong
+    # because today's show hasn't started yet.
+    _setlist_dates_p = {d for dates in sphere_songs_p.values() for d in dates}
+    played     = sorted(d for d in sphere_dates_p if d in _setlist_dates_p)
+    upcoming   = sorted(d for d in sphere_dates_p if d not in _setlist_dates_p)
 
     # Summary of run so far
     st.markdown(f"""
